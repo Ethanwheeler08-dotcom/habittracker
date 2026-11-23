@@ -217,6 +217,33 @@
   .habit.checked .h-check svg.i { opacity: 1; transform: scale(1); }
   .habit.checked .h-sub { color: var(--c); font-weight: 600; }
 
+  .habit.locked { opacity: .55; cursor: not-allowed; }
+  .habit.locked:active { transform: none; box-shadow: 0 4px 0 var(--card-2); }
+  .habit.locked .h-sub { color: var(--red); }
+
+  /* ---------- today / yesterday switch ---------- */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 11px; background: var(--card); gap: 3px; }
+  .seg button {
+    min-height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--text-2);
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s, color .2s;
+  }
+  .seg button span { font-weight: 500; color: var(--text-3); margin-left: 2px; }
+  .seg button.on { background: var(--card-3); color: var(--text); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+  .seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .nudge {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 10px 14px; border-radius: var(--r-md);
+    border: 1px solid rgba(10, 132, 255, 0.35); background: rgba(10, 132, 255, 0.12); color: var(--blue);
+    font-size: 15px; font-weight: 600; text-align: left; cursor: pointer;
+  }
+  .nudge .grow { flex: 1; }
+  .nudge svg.i { width: 20px; height: 20px; }
+  .nudge:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .ynote {
+    display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-md);
+    background: rgba(255, 214, 10, 0.1); border: 1px solid rgba(255, 214, 10, 0.3); color: var(--text-2); font-size: 14px;
+  }
+  .ynote svg.i { width: 18px; height: 18px; color: var(--yellow); margin-top: 1px; }
+
   /* ---------- next reward card ---------- */
   .reward-card { overflow: hidden; cursor: pointer; border: 0; padding: 0; text-align: left; width: 100%; display: block; }
   .reward-card:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
@@ -512,6 +539,12 @@
 
     <div class="group">
       <div class="group-head"><h2>Daily habits</h2><span class="aside num" id="habitCount">0 of 5</span></div>
+      <div class="seg" id="seg" role="tablist" aria-label="Which day to tick">
+        <button role="tab" data-day="today" id="segToday">Today</button>
+        <button role="tab" data-day="yesterday" id="segYesterday">Yesterday <span class="num" id="segYesterdayCount">0/5</span></button>
+      </div>
+      <button class="nudge" id="yNudge" hidden><span data-icon="clock"></span><span class="grow">Forgot to tick yesterday? Fill it in</span><span data-icon="chev"></span></button>
+      <div class="ynote" id="yNote" hidden></div>
       <div class="goal-line" id="goalLine"></div>
       <div class="habits" id="habits"></div>
     </div>
@@ -602,7 +635,8 @@
         <ul>
           <li><b>+1 point</b> for each habit you tick today. Untick it and the point comes back off.</li>
           <li><b>Perfect day</b> when all 5 are ticked. String 7 together for a <b>+5 bonus</b>, then the counter starts a new week.</li>
-          <li>Miss a day and the perfect-day streak drops back to 0.</li>
+          <li>Miss a day and the perfect-day streak drops back to 0. Missing a day never takes points away.</li>
+          <li><b>Forgot to tick?</b> Use the Yesterday tab to fill in the day before. It counts as if you ticked on time. Only yesterday can be changed, and only until midnight.</li>
           <li><b>Went over 1,800 cals:</b> −5 points (never below 0) and today's calorie box is unticked.</li>
           <li><b>Ate fast food:</b> Current Points and the streak reset to 0, and the date goes into Wipeout History.</li>
           <li><b>XP and levels</b> count every point you've ever earned, so penalties never take them away.</li>
@@ -722,7 +756,9 @@
     download: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
     upload: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/>',
     trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
-    level: '<path d="M4 18l5-5 4 4 7-8"/><path d="M15 9h5v5"/>'
+    level: '<path d="M4 18l5-5 4 4 7-8"/><path d="M15 9h5v5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    chev: '<path d="M9.5 6l6 6-6 6"/>'
   };
   const ico = (name, extra = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${ICONS[name] || ''}</svg>`;
 
@@ -736,14 +772,15 @@
   const pretty = (k, opts = { weekday: 'long', month: 'long', day: 'numeric' }) => parseKey(k).toLocaleDateString(undefined, opts);
 
   // ================= state =================
-  const freshToday = () => ({ date: dayKey(), checks: HABITS.map(() => false), perfectUndo: null });
+  const freshToday = () => ({ date: dayKey(), checks: HABITS.map(() => false) });
   const defaults = () => ({
-    version: 2,
+    version: 3,
     points: 0, best: 0,
-    streak: 0, lastPerfect: null,
+    streak: 0,      // cached; always re-derived from the log by syncStreak()
     today: freshToday(),
     rewards: {}, claimed: {},
     wipeouts: [], bonuses: 0,
+    bonusDays: [],  // dates on which a 7-day +5 bonus was earned
     xp: 0,
     log: {},        // { 'YYYY-MM-DD': { c: [0/1 x5], p: bool, w: bool, o: number } }
     badges: {},     // { badgeId: 'YYYY-MM-DD' }
@@ -756,12 +793,12 @@
     const d = defaults();
     if (!s || typeof s !== 'object') return d;
     const out = {
-      version: 2,
+      version: 3,
       points: nat(s.points),
       best: nat(s.best),
       streak: Math.min(nat(s.streak), STREAK_GOAL - 1),
-      lastPerfect: typeof s.lastPerfect === 'string' ? s.lastPerfect : null,
       today: d.today,
+      bonusDays: Array.isArray(s.bonusDays) ? s.bonusDays.filter(k => typeof k === 'string') : null,
       rewards: obj(s.rewards),
       claimed: obj(s.claimed),
       wipeouts: Array.isArray(s.wipeouts) ? s.wipeouts.filter(w => w && typeof w.date === 'string') : [],
@@ -772,9 +809,23 @@
       settings: Object.assign(d.settings, obj(s.settings))
     };
     if (s.today && typeof s.today.date === 'string' && Array.isArray(s.today.checks)) {
-      out.today = { date: s.today.date, checks: HABITS.map((_, i) => !!s.today.checks[i]), perfectUndo: s.today.perfectUndo || null };
+      out.today = { date: s.today.date, checks: HABITS.map((_, i) => !!s.today.checks[i]) };
     }
+    for (const k of Object.keys(out.log)) if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !out.log[k] || typeof out.log[k] !== 'object') delete out.log[k];
     out.best = Math.max(out.best, out.points);
+    // Older saves tracked the streak with a counter instead of the day log: fill in the
+    // perfect days that counter implies, then adopt the derived bonus days as-is.
+    if (out.bonusDays === null) {
+      const lp = typeof s.lastPerfect === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.lastPerfect) ? s.lastPerfect : null;
+      if (lp && out.streak > 0) {
+        for (let n = 0; n < out.streak; n++) {
+          const k = addDays(lp, -n);
+          if (!out.log[k]) out.log[k] = { c: HABITS.map(() => 1), p: true };
+        }
+      }
+      out.bonusDays = deriveStreak(out.log).bonusDays;
+    }
+    out.streak = deriveStreak(out.log).streak;
     return out;
   }
   function load() {
@@ -791,12 +842,15 @@
 
   let state = load();
 
+  let editing = 'today';   // which day the habit list is editing: 'today' or 'yesterday'
+
   function rollover() {
-    let changed = false;
-    if (state.today.date !== dayKey()) { state.today = freshToday(); changed = true; }
-    if (state.streak > 0 && state.lastPerfect && state.lastPerfect < yesterdayKey()) { state.streak = 0; changed = true; }
-    if (changed) save();
-    return changed;
+    if (state.today.date === dayKey()) return false;
+    state.today = freshToday();
+    editing = 'today';
+    syncStreak(true);
+    save();
+    return true;
   }
 
   // ================= scoring =================
@@ -807,26 +861,63 @@
     state.best = Math.max(state.best, state.points);
     if (countXp) state.xp = Math.max(0, state.xp + delta);
   }
-  function markPerfect() {
-    const undo = { streak: state.streak, lastPerfect: state.lastPerfect, bonus: false };
-    state.streak = state.lastPerfect === yesterdayKey() ? state.streak + 1 : 1;
-    state.lastPerfect = state.today.date;
-    if (state.streak >= STREAK_GOAL) {
-      addPoints(STREAK_BONUS, true);
-      state.streak = 0;
-      state.bonuses += 1;
-      undo.bonus = true;
+
+  // The perfect-day streak is worked out from the day log, so filling in yesterday
+  // late counts exactly as if it had been ticked on time.
+  // A perfect day extends the run; a day with no perfect entry breaks it (today only
+  // counts once it's perfect); a wipeout resets it. Every 7th day earns the bonus and
+  // starts a new week.
+  function deriveStreak(log) {
+    const today = dayKey();
+    const keys = Object.keys(log).sort();
+    let c = 0, prevPerfect = false;
+    const bonusDays = [];
+    if (!keys.length) return { streak: 0, bonusDays };
+    for (let k = keys[0]; k <= today; k = addDays(k, 1)) {
+      const e = log[k];
+      if (e && e.w) { c = 0; prevPerfect = false; }
+      if (e && e.p) {
+        c = prevPerfect ? c + 1 : 1;
+        if (c >= STREAK_GOAL) { bonusDays.push(k); c = 0; }
+        prevPerfect = true;
+      } else {
+        if (k !== today) c = 0;
+        prevPerfect = false;
+      }
     }
-    state.today.perfectUndo = undo;
-    return undo.bonus;
+    return { streak: c, bonusDays };
   }
-  function unmarkPerfect() {
-    const undo = state.today.perfectUndo;
-    if (!undo) return;
-    state.streak = undo.streak;
-    state.lastPerfect = undo.lastPerfect;
-    if (undo.bonus) { addPoints(-STREAK_BONUS, true); state.bonuses = Math.max(0, state.bonuses - 1); }
-    state.today.perfectUndo = null;
+  // Re-derive the streak and pay out (or take back) any 7-day bonuses that changed.
+  // keepRemoved: a wipeout clears today's ticks, but shouldn't claw back XP for them.
+  function syncStreak(keepRemoved) {
+    const { streak, bonusDays } = deriveStreak(state.log);
+    const had = new Set(state.bonusDays);
+    const now = new Set(bonusDays);
+    let gained = 0;
+    for (const k of now) if (!had.has(k)) { addPoints(STREAK_BONUS, true); state.bonuses++; gained++; }
+    for (const k of had) if (!now.has(k)) {
+      if (!keepRemoved) addPoints(-STREAK_BONUS, true);
+      state.bonuses = Math.max(0, state.bonuses - 1);
+    }
+    state.bonusDays = bonusDays;
+    state.streak = streak;
+    return gained;
+  }
+
+  // Habits that can't be ticked on a given day: the calorie box after "went over",
+  // and the fast-food box on a wipeout day.
+  function lockReason(k, i) {
+    const e = state.log[k];
+    if (!e) return '';
+    if (i === CAL_HABIT && nat(e.o) > 0) return 'Locked · went over that day';
+    if (i === 0 && e.w) return 'Locked · fast food that day';
+    return '';
+  }
+  const yesterdayLocked = () => !!(state.log[dayKey()] && state.log[dayKey()].w);
+  function checksFor(which) {
+    if (which === 'today') return state.today.checks;
+    const e = state.log[yesterdayKey()];
+    return HABITS.map((_, i) => !!(e && Array.isArray(e.c) && e.c[i]));
   }
   function logToday(extra) {
     const k = state.today.date;
@@ -918,30 +1009,40 @@
   }
 
   function toggleHabit(i, el) {
+    rollover();
+    const which = editing;
+    const k = which === 'today' ? state.today.date : yesterdayKey();
+    if (lockReason(k, i) || (which === 'yesterday' && yesterdayLocked())) { render(); return; }
+    const willCheck = !checksFor(which)[i];
     mutate(() => {
       const events = [];
-      const wasPerfect = isPerfect();
-      const checked = !state.today.checks[i];
-      state.today.checks[i] = checked;
-      addPoints(checked ? 1 : -1, true);
-      if (!wasPerfect && isPerfect()) {
-        const bonus = markPerfect();
-        events.push(bonus ? { kind: 'bonus' } : { kind: 'perfect', streak: state.streak });
-      } else if (wasPerfect && !isPerfect()) unmarkPerfect();
-      logToday();
-      if (el) floatText(el, checked ? '+1' : '−1', !checked);
-      if (checked) { sfx(isPerfect() ? 'none' : 'tick'); buzz(15); } else sfx('untick');
+      if (which === 'today') {
+        state.today.checks[i] = willCheck;
+        logToday();
+      } else {
+        const e = state.log[k] || {};
+        e.c = checksFor('yesterday').map(b => (b ? 1 : 0));
+        e.c[i] = willCheck ? 1 : 0;
+        e.p = e.c.every(Boolean);
+        state.log[k] = e;
+      }
+      addPoints(willCheck ? 1 : -1, true);
+      const gained = syncStreak(false);
+      const nowPerfect = checksFor(which).every(Boolean);
+      if (gained) events.push({ kind: 'bonus' });
+      else if (willCheck && nowPerfect) events.push({ kind: 'perfect', streak: state.streak, late: which === 'yesterday' });
+      if (el) floatText(el, willCheck ? '+1' : '−1', !willCheck);
+      if (willCheck) { sfx(nowPerfect ? 'none' : 'tick'); buzz(15); } else sfx('untick');
       return events;
-    }, state.today.checks[i] ? 'drop' : 'bump');
+    }, willCheck ? 'bump' : 'drop');
   }
 
   function penaltyOverCals() {
     mutate(() => {
-      const wasPerfect = isPerfect();
       if (state.today.checks[CAL_HABIT]) { state.today.checks[CAL_HABIT] = false; state.xp = Math.max(0, state.xp - 1); }
-      if (wasPerfect) unmarkPerfect();
-      addPoints(-OVER_PENALTY, false);
       logToday(e => ({ o: nat(e.o) + 1 }));
+      syncStreak(false);
+      addPoints(-OVER_PENALTY, false);
       sfx('penalty'); buzz([40, 40, 40]);
       toast('alert', '−5 points', 'Shake it off. Tomorrow is a fresh day.', 'var(--red)');
     }, 'drop');
@@ -950,11 +1051,11 @@
   function penaltyFastFood() {
     mutate(() => {
       state.wipeouts.unshift({ date: dayKey(), ts: Date.now(), pointsLost: state.points, streakLost: state.streak });
-      state.points = 0;
-      state.streak = 0;
-      state.lastPerfect = null;
       state.today = freshToday();
+      editing = 'today';
       logToday(() => ({ w: true }));
+      syncStreak(true);
+      state.points = 0;
       sfx('wipe'); buzz([80, 50, 80]);
       toast('heart', 'Wiped back to 0', 'Every streak starts with day one. You’ve got this.', 'var(--red)');
     }, 'drop');
@@ -984,6 +1085,14 @@
       const input = e.target.closest('input[type=checkbox]');
       if (input) toggleHabit(Number(input.dataset.i), input.closest('.habit'));
     });
+    $('seg').addEventListener('click', e => {
+      const b = e.target.closest('button[data-day]');
+      if (!b) return;
+      rollover();
+      editing = b.dataset.day;
+      render();
+    });
+    $('yNudge').addEventListener('click', () => { editing = 'yesterday'; render(); });
     $('flames').innerHTML = Array.from({ length: STREAK_GOAL }, () => '<i></i>').join('');
     const r = 50, circ = 2 * Math.PI * r;
     $('ringFill').style.strokeDasharray = circ;
@@ -1064,20 +1173,49 @@
     $('week').innerHTML = week;
     $('runAside').textContent = s.current > 0 ? `${plural(s.current, 'perfect day')} in a row` : '';
 
-    // habits
-    document.querySelectorAll('#habits .habit').forEach(el => {
-      const i = Number(el.dataset.i), c = state.today.checks[i];
-      el.classList.toggle('checked', c);
-      el.querySelector('input').checked = c;
-      el.querySelector('.h-sub').textContent = c ? 'Done · +1 point' : '+1 point';
+    // habits (today or yesterday)
+    const yKey = yesterdayKey();
+    const isY = editing === 'yesterday';
+    const dayK = isY ? yKey : state.today.date;
+    const checks = checksFor(editing);
+    const yLocked = isY && yesterdayLocked();
+    document.querySelectorAll('#seg button').forEach(b => {
+      const on = b.dataset.day === editing;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
     });
-    $('habitCount').textContent = `${done} of 5`;
+    const yDone = checksFor('yesterday').filter(Boolean).length;
+    $('segYesterdayCount').textContent = `${yDone}/5`;
+    document.querySelectorAll('#habits .habit').forEach(el => {
+      const i = Number(el.dataset.i), c = checks[i];
+      const lock = lockReason(dayK, i) || (yLocked ? 'Locked · you reset today' : '');
+      el.classList.toggle('checked', c);
+      el.classList.toggle('locked', !!lock);
+      const input = el.querySelector('input');
+      input.checked = c;
+      input.disabled = !!lock;
+      el.querySelector('.h-sub').textContent = lock || (c ? 'Done · +1 point' : '+1 point');
+    });
+    const shownDone = checks.filter(Boolean).length;
+    $('habitCount').textContent = `${shownDone} of 5`;
     const gl = $('goalLine');
-    gl.classList.toggle('done', done === 5);
-    gl.innerHTML = done === 5
-      ? `${ico('check')} Perfect day locked in. Come back tomorrow for day ${Math.min(state.streak + 1, STREAK_GOAL)}.`
-      : done === 0 ? 'Tap a habit when you’ve done it.' : `${plural(5 - done, 'more habit')} for a perfect day.`;
-    if (done === 5 && state.streak === 0 && state.today.perfectUndo && state.today.perfectUndo.bonus) gl.innerHTML = `${ico('crown')} Week complete! +5 bonus earned. A new week starts tomorrow.`;
+    gl.classList.toggle('done', shownDone === 5);
+    if (isY) {
+      gl.innerHTML = shownDone === 5
+        ? `${ico('check')} Yesterday counts as a perfect day.`
+        : `Filling in ${esc(pretty(yKey, { weekday: 'long', month: 'short', day: 'numeric' }))}. Tick what you actually did.`;
+    } else {
+      gl.innerHTML = done === 5
+        ? `${ico('check')} Perfect day locked in. Come back tomorrow for day ${Math.min(state.streak + 1, STREAK_GOAL)}.`
+        : done === 0 ? 'Tap a habit when you’ve done it.' : `${plural(5 - done, 'more habit')} for a perfect day.`;
+      if (done === 5 && state.bonusDays.includes(state.today.date)) gl.innerHTML = `${ico('crown')} Week complete! +5 bonus earned. A new week starts tomorrow.`;
+    }
+    $('yNote').hidden = !isY;
+    $('yNote').innerHTML = yLocked
+      ? `${ico('lock')}<span>Yesterday is locked because you used the fast-food reset today.</span>`
+      : `${ico('clock')}<span>Ticks for yesterday count as if you did them on time, including your streak. You can change yesterday until midnight tonight.</span>`;
+    const everUsed = Object.keys(state.log).some(k => k < state.today.date) || state.xp > 0;
+    $('yNudge').hidden = isY || !everUsed || yDone > 0 || yesterdayLocked();
 
     renderNextReward();
     renderRewards();
@@ -1351,8 +1489,10 @@
     let c = 'var(--yellow)', icon = 'star', big = '', title = '', body = '', btn = 'Continue', btnCls = 'gold', sound = 'perfect', boom = true;
     if (ev.kind === 'perfect') {
       c = 'var(--orange)'; icon = 'flame'; btnCls = '';
-      title = 'Perfect day!';
-      body = `All 5 habits done. That’s ${ev.streak}/7 toward your +5 weekly bonus.`;
+      title = ev.late ? 'Yesterday was perfect!' : 'Perfect day!';
+      body = ev.streak > 0
+        ? `All 5 habits done. You’re on ${ev.streak}/7 toward your +5 weekly bonus.`
+        : 'All 5 habits done. Finish today too to keep the streak going.';
       big = `${ev.streak}/7`;
     } else if (ev.kind === 'bonus') {
       c = 'var(--yellow)'; icon = 'crown'; big = '+5';
