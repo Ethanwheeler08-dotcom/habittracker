@@ -3,339 +3,793 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0d10">
-<meta name="color-scheme" content="dark">
 <title>Habit Tracker</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap">
 <style>
+  /* Layout: one 600px column of iOS-style grouped cards under a frosted top bar; the burger opens a drawer that switches views. */
   :root {
-    --bg: #0b0d10;
-    --surface: #14171c;
-    --surface-2: #1b1f26;
-    --border: #262b34;
-    --text: #e8ebf0;
-    --muted: #8b93a1;
-    --faint: #5b6270;
-    --accent: #3ee08f;
-    --accent-dim: rgba(62, 224, 143, 0.14);
-    --gold: #f5c451;
-    --gold-dim: rgba(245, 196, 81, 0.14);
-    --danger: #ff4d5e;
-    --danger-dim: rgba(255, 77, 94, 0.12);
-    --radius: 16px;
-    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+    --bg: #000000;
+    --card: #1c1c1e;
+    --card-2: #2c2c2e;
+    --card-3: #3a3a3c;
+    --sep: rgba(84, 84, 88, 0.45);
+    --text: #f5f5f7;
+    --text-2: rgba(235, 235, 245, 0.62);
+    --text-3: rgba(235, 235, 245, 0.32);
+    --green: #30d158;   --green-deep: #1e8e3e;
+    --orange: #ff9f0a;  --orange-deep: #b86e00;
+    --yellow: #ffd60a;  --yellow-deep: #b39500;
+    --red: #ff453a;     --red-deep: #a8241c;
+    --blue: #0a84ff;
+    --teal: #64d2ff;
+    --pink: #ff375f;
+    --purple: #bf5af2;
+    --indigo: #5e5ce6;
+    --on-accent: #0b0b0c;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --bar-bg: rgba(18, 18, 20, 0.72);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, "Segoe UI", Roboto, sans-serif;
+    --font-round: ui-rounded, "SF Pro Rounded", Nunito, -apple-system, system-ui, sans-serif;
+    --r-xl: 26px;
+    --r-lg: 20px;
+    --r-md: 14px;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: var(--font);
-    line-height: 1.45;
+    font-size: 16px;
+    line-height: 1.4;
     -webkit-font-smoothing: antialiased;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top, 0px); /*REPO-ONLY*/
+    padding-bottom: env(safe-area-inset-bottom, 0px); /*REPO-ONLY*/
   }
-  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
-  header.top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
-  header.top h1 { font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
-  header.top .date { font-size: 13px; color: var(--faint); }
-
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-  section { margin-top: 28px; }
-  h2 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px 2px; }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 30; background: var(--bg);
+  }
+  button { font: inherit; color: inherit; }
   .num { font-variant-numeric: tabular-nums; }
+  .round { font-family: var(--font-round); }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-  /* Hero */
-  .hero { padding: 28px 20px 22px; text-align: center; position: relative; overflow: hidden; }
-  .hero::before {
-    content: ""; position: absolute; inset: -40% -20% auto; height: 120%;
-    background: radial-gradient(closest-side, rgba(62,224,143,.16), transparent 70%);
-    pointer-events: none;
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: var(--bar-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid transparent; transition: border-color .2s;
   }
-  .hero .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); position: relative; }
-  .hero .points {
-    position: relative; font-size: clamp(88px, 30vw, 140px); font-weight: 800; line-height: 1;
-    letter-spacing: -0.04em; color: var(--accent); margin: 6px 0 4px;
-    text-shadow: 0 0 40px rgba(62,224,143,.25);
-    transition: transform .25s cubic-bezier(.3,1.6,.5,1), color .3s;
+  .topbar.scrolled { border-bottom-color: var(--sep); }
+  .topbar-inner {
+    max-width: 600px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 10px;
+    padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  .hero .points.bump { transform: scale(1.08); }
-  .hero .points.drop { color: var(--danger); transform: scale(.94); }
-  .hero .sub { position: relative; font-size: 13px; color: var(--faint); }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; display: grid; place-items: center;
+    cursor: pointer; color: var(--text); -webkit-tap-highlight-color: transparent;
+  }
+  .icon-btn:hover { background: var(--card); }
+  .icon-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .bar-title { flex: 1; font-weight: 600; font-size: 17px; opacity: 0; transition: opacity .2s; text-align: center; margin-right: 8px; }
+  .topbar.scrolled .bar-title { opacity: 1; }
+  .chips { display: flex; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 16px;
+    background: var(--card); font-family: var(--font-round); font-weight: 800; font-size: 15px; border: 0; cursor: pointer;
+  }
+  .chip svg.i { width: 18px; height: 18px; }
+  .chip.flame { color: var(--orange); }
+  .chip.level { color: var(--purple); }
 
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-  .stat { padding: 16px; }
-  .stat .label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-  .stat .value { font-size: 34px; font-weight: 750; letter-spacing: -0.02em; margin-top: 2px; }
-  .stat .value small { font-size: 18px; color: var(--faint); font-weight: 600; }
-  .stat.best .value { color: var(--gold); }
-  .dots { display: flex; gap: 5px; margin-top: 8px; }
-  .dots i { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border); transition: background .3s; }
-  .dots i.on { background: var(--accent); border-color: var(--accent); }
+  /* ---------- page ---------- */
+  main {
+    max-width: 600px; margin: 0 auto;
+    padding-block: 4px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .view { display: flex; flex-direction: column; gap: 28px; animation: viewIn .28s ease-out; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .large-title { margin: 6px 0 0; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; text-wrap: balance; }
+  .title-wrap .sub { color: var(--text-2); font-size: 15px; margin-top: 4px; }
+  .group { display: flex; flex-direction: column; gap: 10px; }
+  .group-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; }
+  .group-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .group-head .aside { color: var(--text-2); font-size: 14px; }
+  .link-btn { background: none; border: 0; color: var(--blue); font-size: 15px; cursor: pointer; padding: 4px; }
+  .card { background: var(--card); border-radius: var(--r-lg); }
 
-  /* Habits */
-  .habits { display: flex; flex-direction: column; gap: 8px; }
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative; overflow: hidden; border-radius: var(--r-xl); padding: 22px 20px 20px;
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(48, 209, 88, 0.22), transparent 60%),
+      radial-gradient(80% 80% at 100% 100%, rgba(94, 92, 230, 0.20), transparent 60%),
+      var(--card);
+  }
+  .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .hero-left { min-width: 0; }
+  .eyebrow { font-size: 13px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .points {
+    font-family: var(--font-round); font-weight: 900; line-height: 0.95; letter-spacing: -0.03em;
+    font-size: clamp(84px, 27vw, 128px); color: var(--green); margin-top: 6px;
+    text-shadow: 0 0 36px rgba(48, 209, 88, 0.35);
+    transition: transform .25s cubic-bezier(.3, 1.6, .5, 1), color .3s;
+    display: inline-block; transform-origin: left center;
+  }
+  .points.long { font-size: clamp(64px, 20vw, 96px); }
+  .points.bump { transform: scale(1.07); }
+  .points.drop { color: var(--red); transform: scale(0.95); }
+  .hero-note { margin-top: 8px; color: var(--text-2); font-size: 14px; }
+  .ring { position: relative; width: 104px; height: 104px; flex: none; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+  .ring .track { stroke: rgba(48, 209, 88, 0.18); }
+  .ring .fill { stroke: var(--green); transition: stroke-dashoffset .6s cubic-bezier(.3, 1.2, .5, 1); }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label b { font-family: var(--font-round); font-size: 26px; font-weight: 900; display: block; line-height: 1; }
+  .ring-label span { font-size: 11px; color: var(--text-2); font-weight: 600; }
+  .level-row { margin-top: 18px; }
+  .level-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 7px; gap: 8px; }
+  .level-meta b { color: var(--text); font-weight: 700; }
+  .bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 5px; transition: width .6s cubic-bezier(.3, 1.2, .5, 1); }
+  .bar.xp > span { background: linear-gradient(90deg, var(--indigo), var(--purple)); }
+  .bar.gold > span { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+  .bar.green > span { background: var(--green); }
+
+  /* ---------- stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { padding: 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .tile-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .tile-icon { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; }
+  .tile-icon svg.i { width: 18px; height: 18px; }
+  .tile-value { font-family: var(--font-round); font-size: 36px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+  .tile-value small { font-size: 18px; color: var(--text-3); font-weight: 800; }
+  .tile.best .tile-icon { background: rgba(255, 214, 10, 0.16); color: var(--yellow); }
+  .tile.best .tile-value { color: var(--yellow); }
+  .tile.streak .tile-icon { background: rgba(255, 159, 10, 0.16); color: var(--orange); }
+  .tile.streak .tile-value { color: var(--orange); }
+  .flames { display: flex; gap: 4px; margin-top: 2px; }
+  .flames i { flex: 1; height: 8px; border-radius: 4px; background: var(--card-2); transition: background .3s, transform .3s; }
+  .flames i.on { background: var(--orange); }
+  .tile-foot { font-size: 12px; color: var(--text-3); }
+
+  /* ---------- week strip ---------- */
+  .week { padding: 16px 12px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .day { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); font-weight: 600; }
+  .day.today { color: var(--text); }
+  .dot {
+    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; position: relative;
+    background: var(--card-2); color: var(--text-3); font-family: var(--font-round); font-weight: 800; font-size: 13px;
+  }
+  .dot svg.i { width: 18px; height: 18px; stroke-width: 3; }
+  .dot.partial { background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--card-2) 0); }
+  .dot.partial::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--card); }
+  .dot.partial span { position: relative; z-index: 1; color: var(--text-2); }
+  .dot.perfect { background: var(--green); color: var(--on-accent); }
+  .dot.wiped { background: rgba(255, 69, 58, 0.2); color: var(--red); }
+  .day.today .dot { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text-3); }
+
+  /* ---------- habits ---------- */
+  .goal-line { display: flex; align-items: center; gap: 8px; padding: 0 4px; font-size: 15px; color: var(--text-2); }
+  .goal-line.done { color: var(--green); font-weight: 600; }
+  .habits { display: flex; flex-direction: column; gap: 10px; }
   .habit {
-    display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 60px;
-    cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
-    transition: background .2s, border-color .2s, transform .1s;
+    --c: var(--green);
+    display: flex; align-items: center; gap: 14px; padding: 14px 14px 14px 14px; min-height: 72px;
+    border-radius: var(--r-lg); background: var(--card); border: 2px solid var(--card-2);
+    box-shadow: 0 4px 0 var(--card-2);
+    cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    transition: transform .08s, box-shadow .08s, background .2s, border-color .2s;
+    position: relative;
   }
-  .habit:active { transform: scale(.99); }
+  .habit:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--card-2); }
   .habit input { position: absolute; opacity: 0; pointer-events: none; }
-  .habit .box {
-    flex: none; width: 28px; height: 28px; border-radius: 9px; border: 2px solid var(--faint);
+  .habit:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .h-icon {
+    width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; flex: none;
+    background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); transition: background .2s, color .2s;
+  }
+  .h-icon svg.i { width: 24px; height: 24px; }
+  .h-text { flex: 1; min-width: 0; }
+  .h-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .h-sub { font-size: 13px; color: var(--text-2); margin-top: 1px; }
+  .h-check {
+    width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid var(--card-3); flex: none;
     display: grid; place-items: center; transition: all .2s;
   }
-  .habit .box svg { width: 16px; height: 16px; stroke: #06140c; stroke-width: 3.2; fill: none; opacity: 0; transform: scale(.5); transition: all .2s; }
-  .habit .name { flex: 1; font-size: 16px; font-weight: 550; }
-  .habit .pt { font-size: 13px; font-weight: 700; color: var(--faint); }
-  .habit.checked { background: var(--accent-dim); border-color: rgba(62,224,143,.4); }
-  .habit.checked .box { background: var(--accent); border-color: var(--accent); }
-  .habit.checked .box svg { opacity: 1; transform: scale(1); }
-  .habit.checked .pt { color: var(--accent); }
-  .habit input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .today-summary { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin: 10px 2px 0; }
-  .today-summary .perfect { color: var(--accent); font-weight: 600; }
+  .h-check svg.i { width: 18px; height: 18px; stroke-width: 3.2; color: var(--on-accent); opacity: 0; transform: scale(.4); transition: all .25s cubic-bezier(.3, 1.6, .5, 1); }
+  .habit.checked { background: color-mix(in srgb, var(--c) 14%, var(--card)); border-color: color-mix(in srgb, var(--c) 70%, transparent); box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, black); }
+  .habit.checked:active { box-shadow: 0 1px 0 color-mix(in srgb, var(--c) 45%, black); }
+  .habit.checked .h-icon { background: var(--c); color: var(--on-accent); }
+  .habit.checked .h-check { background: var(--c); border-color: var(--c); }
+  .habit.checked .h-check svg.i { opacity: 1; transform: scale(1); }
+  .habit.checked .h-sub { color: var(--c); font-weight: 600; }
 
-  /* Milestones */
-  .milestones { display: flex; flex-direction: column; gap: 8px; }
-  .ms { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
-  .ms .tier {
-    flex: none; width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center;
-    background: var(--gold-dim); color: var(--gold); font-weight: 800; font-size: 18px;
+  /* ---------- next reward card ---------- */
+  .reward-card { overflow: hidden; cursor: pointer; border: 0; padding: 0; text-align: left; width: 100%; display: block; }
+  .reward-card:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .reward-cover {
+    height: 112px; position: relative; display: flex; align-items: flex-end; padding: 14px 16px;
+    background:
+      radial-gradient(60% 120% at 85% 20%, rgba(255, 214, 10, 0.55), transparent 60%),
+      radial-gradient(70% 140% at 10% 100%, rgba(255, 55, 95, 0.6), transparent 60%),
+      linear-gradient(135deg, #3a1530, #2a1a08);
   }
-  .ms .body { flex: 1; min-width: 0; }
-  .ms .body .t { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-  .ms input[type=text] {
-    width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-    border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 16px;
+  .reward-cover .big-gift { position: absolute; right: 16px; top: 14px; color: rgba(255, 255, 255, 0.92); }
+  .reward-cover .big-gift svg.i { width: 54px; height: 54px; stroke-width: 1.6; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px;
+    font-size: 12px; font-weight: 700; letter-spacing: .02em;
   }
-  .ms input[type=text]:focus { outline: none; border-color: var(--gold); }
-  .ms input[type=text]::placeholder { color: var(--faint); }
-  .ms.locked .tier { background: var(--surface-2); color: var(--faint); }
-  .ms.locked .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 8px; }
-  .ms.locked .bar span { display: block; height: 100%; background: var(--gold); border-radius: 3px; transition: width .4s; }
-  .ms.locked .hint { font-size: 14px; color: var(--muted); }
+  .pill.glass { background: rgba(0, 0, 0, 0.45); color: #fff; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .reward-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .reward-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .reward-title.placeholder { color: var(--text-3); font-weight: 600; }
+  .reward-meta { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-2); }
 
-  /* Penalties */
-  .penalties { display: flex; flex-direction: column; gap: 10px; }
-  .btn-danger {
-    width: 100%; min-height: 56px; padding: 14px 16px; border-radius: 14px; font: inherit; font-size: 16px; font-weight: 700;
-    cursor: pointer; border: 1px solid rgba(255,77,94,.45); background: var(--danger-dim); color: var(--danger);
-    transition: background .15s, transform .1s;
+  /* ---------- 3D buttons ---------- */
+  .btn3d {
+    --b: var(--green); --bd: var(--green-deep); --fg: var(--on-accent);
+    width: 100%; min-height: 54px; padding: 12px 16px; border-radius: 16px; border: 0; cursor: pointer;
+    background: var(--b); color: var(--fg); font-family: var(--font-round); font-weight: 900; font-size: 17px; letter-spacing: .01em;
+    box-shadow: 0 4px 0 var(--bd); transition: transform .08s, box-shadow .08s, filter .15s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .btn-danger:hover { background: rgba(255,77,94,.2); }
-  .btn-danger:active { transform: scale(.985); }
-  .btn-danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
-  .btn-danger.solid:hover { background: #ff6573; }
+  .btn3d:hover { filter: brightness(1.06); }
+  .btn3d:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--bd); }
+  .btn3d:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  .btn3d.red { --b: var(--red); --bd: var(--red-deep); --fg: #fff; }
+  .btn3d.red-soft { --b: rgba(255, 69, 58, 0.14); --bd: rgba(255, 69, 58, 0.35); --fg: var(--red); border: 2px solid rgba(255, 69, 58, 0.5); }
+  .btn3d.gold { --b: var(--yellow); --bd: var(--yellow-deep); }
+  .btn3d.ghost { --b: var(--card-2); --bd: #18181a; --fg: var(--text); }
+  .btn3d.small { min-height: 42px; font-size: 15px; border-radius: 13px; }
+  .penalties { display: flex; flex-direction: column; gap: 14px; }
+  .penalty-note { font-size: 13px; color: var(--text-3); padding: 0 4px; }
 
-  .history { margin-top: 12px; padding: 4px 16px; }
-  .history ul { list-style: none; margin: 0; padding: 0; }
-  .history li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
-  .history li:first-child { border-top: 0; }
-  .history li .lost { color: var(--danger); font-weight: 600; white-space: nowrap; }
-  .history .empty { padding: 14px 0; font-size: 14px; color: var(--faint); text-align: center; }
+  /* ---------- rewards path ---------- */
+  .summary-card { padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+  .summary-card b { display: block; font-family: var(--font-round); font-size: 28px; font-weight: 900; line-height: 1.1; }
+  .summary-card span { font-size: 12px; color: var(--text-2); font-weight: 600; }
+  .path { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .tier { display: grid; grid-template-columns: 64px 1fr; gap: 12px; position: relative; padding-bottom: 14px; }
+  .tier::before {
+    content: ""; position: absolute; left: 31px; top: 60px; bottom: -2px; width: 4px; border-radius: 2px; background: var(--card-2);
+  }
+  .tier:last-child::before { display: none; }
+  .tier.unlocked::before { background: rgba(255, 214, 10, 0.4); }
+  .node {
+    width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; position: relative; z-index: 1;
+    background: var(--card-2); color: var(--text-3); font-family: var(--font-round); font-weight: 900; font-size: 18px;
+    box-shadow: 0 5px 0 #141416;
+  }
+  .node svg.i { width: 26px; height: 26px; }
+  .tier.unlocked .node { background: var(--yellow); color: var(--on-accent); box-shadow: 0 5px 0 var(--yellow-deep), 0 0 24px rgba(255, 214, 10, 0.35); }
+  .tier.claimed .node { background: var(--green); color: var(--on-accent); box-shadow: 0 5px 0 var(--green-deep); }
+  .tier.next .node { background: var(--card); border: 3px solid var(--yellow); color: var(--yellow); box-shadow: 0 5px 0 #141416; }
+  .tier-card { padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .tier-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tier-top h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  .pill.locked { background: var(--card-2); color: var(--text-2); }
+  .pill.unlocked { background: rgba(255, 214, 10, 0.16); color: var(--yellow); }
+  .pill.claimed { background: rgba(48, 209, 88, 0.16); color: var(--green); }
+  .pill.next { background: rgba(10, 132, 255, 0.16); color: var(--blue); }
+  .field {
+    width: 100%; background: var(--card-2); border: 1.5px solid transparent; color: var(--text);
+    border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 16px;
+  }
+  .field:focus { outline: none; border-color: var(--yellow); }
+  .field::placeholder { color: var(--text-3); }
+  .tier-progress { font-size: 13px; color: var(--text-2); display: flex; flex-direction: column; gap: 6px; }
 
-  footer { margin-top: 36px; display: flex; justify-content: center; gap: 18px; font-size: 13px; }
-  footer button { background: none; border: 0; color: var(--faint); font: inherit; cursor: pointer; padding: 6px; text-decoration: underline; text-underline-offset: 3px; }
-  footer button:hover { color: var(--muted); }
+  /* ---------- badges ---------- */
+  .badges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 520px) { .badges { grid-template-columns: repeat(3, 1fr); } }
+  .badge { padding: 16px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; min-width: 0; }
+  .medal {
+    --c: var(--yellow);
+    width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; position: relative;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 100%, white 25%), var(--c) 55%, color-mix(in srgb, var(--c) 70%, black));
+    color: var(--on-accent); box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 55%, black), 0 0 20px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  .medal svg.i { width: 28px; height: 28px; stroke-width: 2.2; }
+  .badge.locked .medal { background: var(--card-2); color: var(--text-3); box-shadow: 0 4px 0 #141416; }
+  .badge h4 { margin: 2px 0 0; font-size: 15px; font-weight: 700; }
+  .badge p { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.35; }
+  .badge .bar { width: 100%; height: 6px; margin-top: 2px; }
+  .badge .when { font-size: 11.5px; color: var(--green); font-weight: 600; }
+  .badge .prog { font-size: 11.5px; color: var(--text-3); font-weight: 600; }
 
-  /* Dialog */
+  /* ---------- stats ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi { padding: 14px 16px; min-width: 0; }
+  .kpi b { display: block; font-family: var(--font-round); font-size: 30px; font-weight: 900; line-height: 1.1; }
+  .kpi span { font-size: 13px; color: var(--text-2); }
+  .list { overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; min-height: 52px; position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; right: 0; left: 58px; height: 0.5px; background: var(--sep); }
+  .list.plain .row + .row::before { left: 16px; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .meta { color: var(--text-2); font-size: 15px; white-space: nowrap; }
+  .row .ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff; }
+  .row .ico svg.i { width: 18px; height: 18px; }
+  .habit-stat .grow > div:first-child { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 6px; gap: 8px; }
+  .habit-stat .bar { height: 6px; }
+  .heat { padding: 16px; }
+  .heat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .heat-grid i { aspect-ratio: 1; border-radius: 7px; background: var(--card-2); max-width: 100%; }
+  .heat-grid i.today { box-shadow: inset 0 0 0 2px var(--text-2); }
+  .heat-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 10px; font-size: 12px; color: var(--text-3); }
+  .heat-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .wipe-row .lost { color: var(--red); font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .empty { padding: 22px 16px; text-align: center; color: var(--text-3); font-size: 15px; }
+
+  /* ---------- settings ---------- */
+  .switch { position: relative; width: 51px; height: 31px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; border-radius: 16px; background: var(--card-3); transition: background .2s; }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 2px 4px rgba(0,0,0,.3); }
+  .switch input:checked + span { background: var(--green); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .row-btn { background: none; border: 0; width: 100%; text-align: left; cursor: pointer; }
+  .row-btn:hover { background: var(--card-2); }
+  .row-btn.danger { color: var(--red); }
+  .rules { padding: 6px 16px; }
+  .rules li { padding: 10px 0; font-size: 15px; color: var(--text-2); border-bottom: 0.5px solid var(--sep); }
+  .rules li:last-child { border-bottom: 0; }
+  .rules li b { color: var(--text); }
+  .rules ul { margin: 0; padding: 0; list-style: none; }
+
+  /* ---------- drawer ---------- */
+  .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; bottom: 0; left: 0; width: min(320px, 86vw); z-index: 41;
+    background: rgba(28, 28, 30, 0.94); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    transform: translateX(-102%); transition: transform .32s cubic-bezier(.2, .9, .3, 1);
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 16px) max(14px, env(safe-area-inset-left, 0px));
+    display: flex; flex-direction: column; gap: 18px; overflow-y: auto;
+    border-right: 0.5px solid var(--sep);
+  }
+  .drawer.open { transform: none; }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; }
+  .drawer-head .brand { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; padding-left: 6px; }
+  .profile { padding: 16px; border-radius: var(--r-lg); background: var(--card-2); display: flex; flex-direction: column; gap: 12px; }
+  .profile-top { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: linear-gradient(135deg, var(--indigo), var(--purple)); font-family: var(--font-round); font-weight: 900; font-size: 22px; color: #fff;
+    box-shadow: 0 4px 0 #3b2a73;
+  }
+  .profile-top b { display: block; font-size: 17px; }
+  .profile-top span { font-size: 13px; color: var(--text-2); }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 12px; border: 0; border-radius: 12px;
+    background: transparent; cursor: pointer; font-size: 17px; text-align: left;
+  }
+  .nav button:hover { background: var(--card-2); }
+  .nav button.active { background: var(--card-3); font-weight: 600; }
+  .nav button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .nav .ico { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #fff; flex: none; }
+  .nav .ico svg.i { width: 19px; height: 19px; }
+  .nav .count { margin-left: auto; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .nav .count.hot { background: var(--red); color: #fff; min-width: 22px; height: 22px; border-radius: 11px; display: grid; place-items: center; font-weight: 700; font-size: 13px; padding: 0 6px; }
+  .drawer-foot { margin-top: auto; font-size: 12px; color: var(--text-3); padding: 0 8px; }
+
+  /* ---------- dialogs ---------- */
   dialog {
-    border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text);
-    padding: 24px 20px 18px; width: min(400px, calc(100vw - 32px));
+    border: 0; border-radius: 22px; background: var(--card); color: var(--text);
+    padding: 24px 20px 20px; width: min(380px, calc(100vw - 32px)); text-align: center;
   }
-  dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(3px); }
-  dialog h3 { margin: 0 0 8px; font-size: 20px; }
-  dialog p { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
-  dialog .actions { display: flex; gap: 10px; }
-  dialog .actions button { flex: 1; min-height: 48px; border-radius: 12px; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
-  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  dialog::backdrop { background: var(--scrim); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  dialog[open] { animation: pop .25s cubic-bezier(.3, 1.4, .5, 1); }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+  .dlg-icon { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 12px; display: grid; place-items: center; background: rgba(255, 69, 58, 0.16); color: var(--red); }
+  .dlg-icon svg.i { width: 28px; height: 28px; }
+  dialog h3 { margin: 0 0 8px; font-size: 20px; letter-spacing: -0.01em; }
+  dialog p { margin: 0 0 22px; color: var(--text-2); font-size: 15px; }
+  .actions { display: flex; flex-direction: column; gap: 12px; }
 
-  /* Celebration */
+  /* ---------- celebration ---------- */
   .celebrate {
-    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
-    background: rgba(5,8,6,.82); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .3s;
+    position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+    background: rgba(0, 0, 0, 0.78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
   }
   .celebrate.show { opacity: 1; pointer-events: auto; }
-  .celebrate .inner { text-align: center; transform: scale(.8); transition: transform .5s cubic-bezier(.3,1.6,.5,1); }
-  .celebrate.show .inner { transform: scale(1); }
-  .celebrate .big { font-size: clamp(72px, 24vw, 120px); font-weight: 900; color: var(--gold); line-height: 1; text-shadow: 0 0 50px rgba(245,196,81,.5); }
-  .celebrate h3 { font-size: 24px; margin: 12px 0 6px; }
-  .celebrate p { color: var(--muted); margin: 0 0 22px; }
-  .celebrate button { min-height: 48px; padding: 0 28px; border-radius: 12px; border: 0; background: var(--gold); color: #1a1405; font: inherit; font-weight: 800; cursor: pointer; }
-  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 51; }
-
-  .float {
-    position: fixed; z-index: 40; font-weight: 800; font-size: 18px; color: var(--accent); pointer-events: none;
-    animation: floatUp .9s ease-out forwards;
+  .cel-card { width: min(360px, 100%); text-align: center; transform: scale(.85) translateY(20px); transition: transform .5s cubic-bezier(.3, 1.5, .5, 1); }
+  .celebrate.show .cel-card { transform: none; }
+  .cel-icon {
+    --c: var(--yellow);
+    width: 128px; height: 128px; margin: 0 auto 18px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 100%, white 30%), var(--c) 55%, color-mix(in srgb, var(--c) 65%, black));
+    color: var(--on-accent); box-shadow: 0 8px 0 color-mix(in srgb, var(--c) 50%, black), 0 0 60px color-mix(in srgb, var(--c) 50%, transparent);
+    animation: wobble 1.6s ease-in-out infinite;
   }
-  .float.neg { color: var(--danger); }
-  @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
+  .cel-icon svg.i { width: 60px; height: 60px; stroke-width: 2; }
+  @keyframes wobble { 0%, 100% { transform: rotate(-4deg) scale(1); } 50% { transform: rotate(4deg) scale(1.04); } }
+  .cel-big { font-family: var(--font-round); font-size: 64px; font-weight: 900; line-height: 1; color: var(--c, var(--yellow)); margin-bottom: 6px; }
+  .cel-card h3 { margin: 0 0 8px; font-family: var(--font-round); font-size: 30px; font-weight: 900; letter-spacing: -0.01em; }
+  .cel-card p { margin: 0 0 26px; color: var(--text-2); font-size: 16px; }
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 61; }
 
+  /* ---------- toast + floating xp ---------- */
   .toast {
-    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
-    background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 12px 18px; border-radius: 12px;
-    font-size: 14px; opacity: 0; transition: all .25s; z-index: 60; max-width: calc(100vw - 32px); text-align: center;
+    position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 70;
+    transform: translate(-50%, -140%); transition: transform .4s cubic-bezier(.3, 1.3, .5, 1);
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px 10px 10px; border-radius: 26px;
+    background: rgba(44, 44, 46, 0.96); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); max-width: calc(100vw - 32px); font-size: 15px; font-weight: 600;
   }
-  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.show { transform: translate(-50%, 0); }
+  .toast .t-ico { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--card-3); color: var(--text); }
+  .toast .t-ico svg.i { width: 18px; height: 18px; }
+  .toast small { display: block; font-weight: 500; color: var(--text-2); font-size: 13px; }
+  .float {
+    position: fixed; z-index: 50; pointer-events: none; font-family: var(--font-round); font-weight: 900; font-size: 20px; color: var(--green);
+    animation: floatUp .9s ease-out forwards; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  }
+  .float.neg { color: var(--red); }
+  @keyframes floatUp { 0% { opacity: 0; transform: translateY(6px) scale(.8); } 20% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 0; transform: translateY(-46px) scale(1); } }
+  .pulse { animation: pulse .5s ease-out; }
+  @keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn" id="menuBtn" aria-label="Open menu" aria-controls="drawer" aria-expanded="false"></button>
+    <div class="bar-title" id="barTitle">Today</div>
+    <div class="chips">
+      <button class="chip flame" id="chipStreak" aria-label="Perfect day streak"></button>
+      <button class="chip level" id="chipLevel" aria-label="Level"></button>
+    </div>
+  </div>
+</header>
+
 <main>
-  <header class="top">
-    <h1>Habit Tracker</h1>
-    <span class="date" id="todayLabel"></span>
-  </header>
-
-  <div class="card hero">
-    <div class="label">Current Points</div>
-    <div class="points num" id="points">0</div>
-    <div class="sub" id="pointsSub">&nbsp;</div>
-  </div>
-
-  <div class="stats">
-    <div class="card stat best">
-      <div class="label">Personal Best</div>
-      <div class="value num" id="best">0</div>
+  <!-- TODAY -->
+  <section class="view" data-view="today" aria-label="Today">
+    <div class="title-wrap">
+      <h1 class="large-title">Today</h1>
+      <div class="sub" id="todayDate"></div>
     </div>
-    <div class="card stat">
-      <div class="label">Perfect Days</div>
-      <div class="value num"><span id="streak">0</span><small>/7</small></div>
-      <div class="dots" id="dots"></div>
-    </div>
-  </div>
 
-  <section>
-    <h2>Today</h2>
-    <div class="habits" id="habits"></div>
-    <div class="today-summary">
-      <span id="todayCount">0/5 done</span>
-      <span id="todayPerfect"></span>
+    <div class="hero">
+      <div class="hero-row">
+        <div class="hero-left">
+          <div class="eyebrow">Current Points</div>
+          <div class="points num" id="points">0</div>
+          <div class="hero-note" id="heroNote"></div>
+        </div>
+        <div class="ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="50"/><circle class="fill" id="ringFill" cx="60" cy="60" r="50"/></svg>
+          <div class="ring-label"><div><b id="ringNum">0/5</b><span>today</span></div></div>
+        </div>
+      </div>
+      <div class="level-row">
+        <div class="level-meta"><span><b id="lvlName">Level 1</b> · <span id="lvlTitle">Rookie</span></span><span class="num" id="lvlXp">0 / 10 XP</span></div>
+        <div class="bar xp"><span id="lvlBar" style="width:0%"></span></div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="card tile best">
+        <div class="tile-head"><span class="tile-icon" data-icon="trophy"></span>Personal Best</div>
+        <div class="tile-value num" id="best">0</div>
+        <div class="tile-foot" id="bestFoot">Highest score ever</div>
+      </div>
+      <div class="card tile streak">
+        <div class="tile-head"><span class="tile-icon" data-icon="flame"></span>Perfect Days</div>
+        <div class="tile-value num"><span id="streak">0</span><small>/7</small></div>
+        <div class="flames" id="flames"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><h2>This week</h2><span class="aside" id="runAside"></span></div>
+      <div class="card week" id="week"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><h2>Daily habits</h2><span class="aside num" id="habitCount">0 of 5</span></div>
+      <div class="goal-line" id="goalLine"></div>
+      <div class="habits" id="habits"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><h2>Next reward</h2><button class="link-btn" data-go="rewards">See all</button></div>
+      <button class="card reward-card" id="nextReward" data-go="rewards"></button>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><h2>Slip-ups</h2></div>
+      <div class="penalties">
+        <button class="btn3d red-soft" id="btnOver">Went Over 1,800 Cals (-5 Points)</button>
+        <button class="btn3d red" id="btnFastFood">I Ate Fast Food (Reset to 0)</button>
+      </div>
+      <div class="penalty-note">Both ask you to confirm first. Your Personal Best, rewards, XP and badges are never taken away.</div>
     </div>
   </section>
 
-  <section>
-    <h2>Milestones</h2>
-    <div class="milestones" id="milestones"></div>
+  <!-- REWARDS -->
+  <section class="view" data-view="rewards" aria-label="Rewards" hidden>
+    <div class="title-wrap">
+      <h1 class="large-title">Rewards</h1>
+      <div class="sub">A new reward unlocks every 50 points. Type what you'll treat yourself to.</div>
+    </div>
+    <div class="card summary-card" id="rewardSummary"></div>
+    <div class="path" id="path"></div>
   </section>
 
-  <section>
-    <h2>Penalties</h2>
-    <div class="penalties">
-      <button class="btn-danger" id="btnOver">Went Over 1,800 Cals (−5 Points)</button>
-      <button class="btn-danger solid" id="btnFastFood">I Ate Fast Food (Reset to 0)</button>
+  <!-- BADGES -->
+  <section class="view" data-view="badges" aria-label="Badges" hidden>
+    <div class="title-wrap">
+      <h1 class="large-title">Badges</h1>
+      <div class="sub" id="badgeSub"></div>
+    </div>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="view" data-view="stats" aria-label="Stats and history" hidden>
+    <div class="title-wrap">
+      <h1 class="large-title">Stats &amp; History</h1>
+      <div class="sub">Everything you've done so far.</div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="group">
+      <div class="group-head"><h2>Last 5 weeks</h2></div>
+      <div class="card heat">
+        <div class="heat-grid" id="heat"></div>
+        <div class="heat-legend">
+          <span>Less</span>
+          <i style="background:var(--card-2)"></i><i style="background:rgba(48,209,88,.3)"></i><i style="background:rgba(48,209,88,.6)"></i><i style="background:var(--green)"></i>
+          <span>Perfect</span>
+          <i style="background:var(--red)"></i><span>Wipeout</span>
+        </div>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h2>Habit totals</h2><span class="aside">days completed</span></div>
+      <div class="card list" id="habitStats"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h2>Wipeout History</h2><span class="aside num" id="wipeCount"></span></div>
+      <div class="card list plain" id="history"></div>
     </div>
   </section>
 
-  <section>
-    <h2>Wipeout History</h2>
-    <div class="card history"><ul id="history"></ul></div>
+  <!-- PREFERENCES -->
+  <section class="view" data-view="prefs" aria-label="Settings" hidden>
+    <div class="title-wrap">
+      <h1 class="large-title">Settings</h1>
+    </div>
+    <div class="card list">
+      <label class="row" for="optSound">
+        <span class="ico" style="background:var(--pink)" data-icon="sound"></span>
+        <span class="grow">Sound effects</span>
+        <span class="switch"><input type="checkbox" id="optSound"><span></span></span>
+      </label>
+      <label class="row" for="optHaptics">
+        <span class="ico" style="background:var(--indigo)" data-icon="phone"></span>
+        <span class="grow">Vibration</span>
+        <span class="switch"><input type="checkbox" id="optHaptics"><span></span></span>
+      </label>
+    </div>
+    <div class="group">
+      <div class="group-head"><h2>How scoring works</h2></div>
+      <div class="card rules">
+        <ul>
+          <li><b>+1 point</b> for each habit you tick today. Untick it and the point comes back off.</li>
+          <li><b>Perfect day</b> when all 5 are ticked. String 7 together for a <b>+5 bonus</b>, then the counter starts a new week.</li>
+          <li>Miss a day and the perfect-day streak drops back to 0.</li>
+          <li><b>Went over 1,800 cals:</b> −5 points (never below 0) and today's calorie box is unticked.</li>
+          <li><b>Ate fast food:</b> Current Points and the streak reset to 0, and the date goes into Wipeout History.</li>
+          <li><b>XP and levels</b> count every point you've ever earned, so penalties never take them away.</li>
+          <li>Rewards unlock from your Personal Best, so a wipeout never locks a reward again.</li>
+        </ul>
+      </div>
+    </div>
+    <!--BACKUP-->
+    <div class="group">
+      <div class="group-head"><h2>Backup</h2></div>
+      <div class="card list">
+        <button class="row row-btn" id="btnExport"><span class="ico" style="background:var(--blue)" data-icon="download"></span><span class="grow">Export backup file</span></button>
+        <button class="row row-btn" id="btnImport"><span class="ico" style="background:var(--teal)" data-icon="upload"></span><span class="grow">Import backup file</span></button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <!--/BACKUP-->
+    <div class="card list">
+      <button class="row row-btn danger" id="btnResetAll"><span class="ico" style="background:var(--red)" data-icon="trash"></span><span class="grow">Erase all data</span></button>
+    </div>
   </section>
-
-  <footer>
-    <button id="btnExport">Export backup</button>
-    <button id="btnImport">Import backup</button>
-    <input type="file" id="importFile" accept="application/json,.json" hidden>
-  </footer>
 </main>
 
-<dialog id="confirmDialog">
+<div class="scrim" id="scrim"></div>
+<nav class="drawer" id="drawer" aria-label="Menu" aria-hidden="true">
+  <div class="drawer-head">
+    <span class="brand">Habit Tracker</span>
+    <button class="icon-btn" id="closeBtn" aria-label="Close menu"></button>
+  </div>
+  <div class="profile">
+    <div class="profile-top">
+      <div class="avatar num" id="dAvatar">1</div>
+      <div><b id="dLevel">Level 1 · Rookie</b><span class="num" id="dXp">0 XP total</span></div>
+    </div>
+    <div class="bar xp"><span id="dBar" style="width:0%"></span></div>
+  </div>
+  <div class="nav" id="nav">
+    <button data-nav="today"><span class="ico" style="background:var(--green)" data-icon="home"></span>Today<span class="count" id="navToday"></span></button>
+    <button data-nav="rewards"><span class="ico" style="background:var(--pink)" data-icon="gift"></span>Rewards<span class="count" id="navRewards"></span></button>
+    <button data-nav="badges"><span class="ico" style="background:var(--orange)" data-icon="medal"></span>Badges<span class="count" id="navBadges"></span></button>
+    <button data-nav="stats"><span class="ico" style="background:var(--blue)" data-icon="chart"></span>Stats &amp; History</button>
+    <button data-nav="prefs"><span class="ico" style="background:var(--card-3)" data-icon="sliders"></span>Settings</button>
+  </div>
+  <div class="drawer-foot">Your progress is saved on this device.</div>
+</nav>
+
+<dialog id="confirmDialog" aria-labelledby="confirmTitle">
+  <div class="dlg-icon" id="confirmIcon"></div>
   <h3 id="confirmTitle"></h3>
   <p id="confirmBody"></p>
   <div class="actions">
-    <button class="btn-ghost" value="cancel" id="confirmCancel">Cancel</button>
-    <button class="btn-danger solid" value="ok" id="confirmOk">Confirm</button>
+    <button class="btn3d red" id="confirmOk">Confirm</button>
+    <button class="btn3d ghost" id="confirmCancel">Cancel</button>
   </div>
 </dialog>
 
-<div class="celebrate" id="celebrate" role="dialog" aria-modal="true" aria-labelledby="celebrateTitle">
-  <div class="inner">
-    <div class="big">+5</div>
-    <h3 id="celebrateTitle">7 Perfect Days!</h3>
-    <p>Bonus points awarded. Your streak resets for the next week.</p>
-    <button id="celebrateClose">Let's go</button>
+<div class="celebrate" id="celebrate" role="dialog" aria-modal="true" aria-labelledby="celTitle">
+  <div class="cel-card" id="celCard">
+    <div class="cel-icon" id="celIcon"></div>
+    <div class="cel-big" id="celBig"></div>
+    <h3 id="celTitle"></h3>
+    <p id="celBody"></p>
+    <button class="btn3d" id="celBtn">Continue</button>
   </div>
 </div>
 <canvas id="confetti"></canvas>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
   'use strict';
 
+  // ================= config =================
   const STORAGE_KEY = 'habitTracker.v1';
-  const HABITS = ['No fast food', 'Drink 2L water', 'No snacks/sugar', 'Do a workout', 'Stay under 1,800 cals'];
+  const HABITS = [
+    { name: 'No fast food',          color: 'var(--orange)', icon: 'burgerNo' },
+    { name: 'Drink 2L water',        color: 'var(--teal)',   icon: 'drop' },
+    { name: 'No snacks/sugar',       color: 'var(--pink)',   icon: 'candyNo' },
+    { name: 'Do a workout',          color: 'var(--green)',  icon: 'dumbbell' },
+    { name: 'Stay under 1,800 cals', color: 'var(--purple)', icon: 'gauge' }
+  ];
   const CAL_HABIT = 4;
   const STREAK_GOAL = 7;
   const STREAK_BONUS = 5;
-  const MILESTONE_STEP = 50;
+  const OVER_PENALTY = 5;
+  const STEP = 50;
+  const LEVEL_TITLES = ['Rookie', 'Starter', 'Go-Getter', 'Committed', 'Disciplined', 'Locked In', 'Machine', 'Unstoppable', 'Elite', 'Legend'];
 
-  // ---------- dates (local time) ----------
-  const pad = n => String(n).padStart(2, '0');
-  const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
-  const prettyDate = key => {
-    const [y, m, d] = key.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const ICONS = {
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    flame: '<path d="M12 21.5a6.8 6.8 0 0 0 6.8-6.8c0-4.2-3-6.6-4.6-9.7-.5 2.1-1.6 3.6-3 4.6-.3-2.6-1.4-5-3.4-7.1.2 4.6-3.6 7.2-3.6 12.2a6.8 6.8 0 0 0 7.8 6.8z"/><path d="M12 21.5a3 3 0 0 1-3-3c0-2 1.6-3 2.4-4.8 1 1.4 3.6 2.6 3.6 4.8a3 3 0 0 1-3 3z"/>',
+    bolt: '<path d="M13 2.5L4.5 13.5h6.5l-1 8 8.5-11h-6.5z"/>',
+    trophy: '<path d="M8 4h8v5.5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a3 3 0 0 0 3 4.2M16 6h2.5a3 3 0 0 1-3 4.2M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5z"/>',
+    gift: '<rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12M12 8v12.5M12 8C10.5 4.5 6.5 4.2 6.5 6.4 6.5 8 9.5 8 12 8zm0 0c1.5-3.5 5.5-3.8 5.5-1.6C17.5 8 14.5 8 12 8z"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    medal: '<circle cx="12" cy="15" r="5.5"/><path d="M8.5 10.5L6 3h4l2 5M15.5 10.5L18 3h-4l-1.2 3"/><path d="M12 12.5l.8 1.7 1.8.2-1.3 1.2.4 1.8-1.7-.9-1.7.9.4-1.8-1.3-1.2 1.8-.2z"/>',
+    chart: '<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+    sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+    home: '<path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>',
+    drop: '<path d="M12 3.2s6.2 6.6 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/><path d="M9 14.5a3 3 0 0 0 3 3"/>',
+    dumbbell: '<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+    burgerNo: '<path d="M5 10.5a7 5 0 0 1 14 0zM4.5 13.5h15M5.5 16.5h13a0 0 0 0 1 0 0 2.5 2.5 0 0 1-2.5 2.5H8a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M3 3l18 18" stroke-width="2.4"/>',
+    candyNo: '<circle cx="12" cy="12" r="4"/><path d="M8.2 10.6L4 8v8l4.2-2.6M15.8 10.6L20 8v8l-4.2-2.6"/><path d="M3 3l18 18" stroke-width="2.4"/>',
+    gauge: '<path d="M4 17.5a8 8 0 1 1 16 0"/><path d="M12 17.5l4-5.5"/><circle cx="12" cy="17.5" r="1.2"/>',
+    star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.8L12 16.8l-5.3 2.8 1.1-5.8-4.3-4.1 5.9-.8z"/>',
+    crown: '<path d="M3.5 8l4.2 4 4.3-6.5 4.3 6.5 4.2-4-1.8 10.5H5.3z"/>',
+    shield: '<path d="M12 3l7.5 3v5.5c0 4.7-3.2 8-7.5 9.5-4.3-1.5-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/>',
+    rocket: '<path d="M12 15l-3-3c1.5-4.5 4.5-8 10-8.5-.5 5.5-4 8.5-8.5 10z"/><path d="M9 12l-3.5.5L4 15l4 .5M12 15l-.5 3.5L9 20l-.5-4"/><circle cx="14.5" cy="9.5" r="1.4"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    heart: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>',
+    alert: '<path d="M12 3.5L2.8 19.5h18.4z"/><path d="M12 10v4M12 17v.2"/>',
+    sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    phone: '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M3.5 9v6M20.5 9v6"/>',
+    download: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
+    upload: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/>',
+    trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
+    level: '<path d="M4 18l5-5 4 4 7-8"/><path d="M15 9h5v5"/>'
   };
+  const ico = (name, extra = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${ICONS[name] || ''}</svg>`;
 
-  // ---------- state ----------
+  // ================= dates =================
+  const pad = n => String(n).padStart(2, '0');
+  const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dayKey = () => keyOf(new Date());
+  const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (k, n) => { const d = parseKey(k); d.setDate(d.getDate() + n); return keyOf(d); };
+  const yesterdayKey = () => addDays(dayKey(), -1);
+  const pretty = (k, opts = { weekday: 'long', month: 'long', day: 'numeric' }) => parseKey(k).toLocaleDateString(undefined, opts);
+
+  // ================= state =================
   const freshToday = () => ({ date: dayKey(), checks: HABITS.map(() => false), perfectUndo: null });
   const defaults = () => ({
-    version: 1,
-    points: 0,
-    best: 0,
-    streak: 0,          // perfect days in the current 7-day run (0–6 shown; 7 triggers bonus then resets)
-    lastPerfect: null,  // date key of the most recent perfect day
+    version: 2,
+    points: 0, best: 0,
+    streak: 0, lastPerfect: null,
     today: freshToday(),
-    rewards: {},        // { "50": "New headphones", ... }
-    wipeouts: [],       // [{ date, ts, pointsLost, streakLost }]
-    bonuses: 0
+    rewards: {}, claimed: {},
+    wipeouts: [], bonuses: 0,
+    xp: 0,
+    log: {},        // { 'YYYY-MM-DD': { c: [0/1 x5], p: bool, w: bool, o: number } }
+    badges: {},     // { badgeId: 'YYYY-MM-DD' }
+    settings: { sound: true, haptics: true, view: 'today' }
   });
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaults();
-      return sanitize(JSON.parse(raw));
-    } catch { return defaults(); }
-  }
+  const nat = v => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
   function sanitize(s) {
     const d = defaults();
     if (!s || typeof s !== 'object') return d;
-    const n = v => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
     const out = {
-      version: 1,
-      points: n(s.points),
-      best: n(s.best),
-      streak: Math.min(n(s.streak), STREAK_GOAL - 1),
+      version: 2,
+      points: nat(s.points),
+      best: nat(s.best),
+      streak: Math.min(nat(s.streak), STREAK_GOAL - 1),
       lastPerfect: typeof s.lastPerfect === 'string' ? s.lastPerfect : null,
       today: d.today,
-      rewards: s.rewards && typeof s.rewards === 'object' ? s.rewards : {},
-      wipeouts: Array.isArray(s.wipeouts) ? s.wipeouts : [],
-      bonuses: n(s.bonuses)
+      rewards: obj(s.rewards),
+      claimed: obj(s.claimed),
+      wipeouts: Array.isArray(s.wipeouts) ? s.wipeouts.filter(w => w && typeof w.date === 'string') : [],
+      bonuses: nat(s.bonuses),
+      xp: Number.isFinite(s.xp) ? nat(s.xp) : nat(s.best),   // v1 data had no XP: start from best
+      log: obj(s.log),
+      badges: obj(s.badges),
+      settings: Object.assign(d.settings, obj(s.settings))
     };
     if (s.today && typeof s.today.date === 'string' && Array.isArray(s.today.checks)) {
-      out.today = {
-        date: s.today.date,
-        checks: HABITS.map((_, i) => !!s.today.checks[i]),
-        perfectUndo: s.today.perfectUndo || null
-      };
+      out.today = { date: s.today.date, checks: HABITS.map((_, i) => !!s.today.checks[i]), perfectUndo: s.today.perfectUndo || null };
     }
     out.best = Math.max(out.best, out.points);
     return out;
   }
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? sanitize(JSON.parse(raw)) : defaults();
+    } catch { return defaults(); }
+  }
+  let saveWarned = false;
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    catch { toast('Could not save — storage is unavailable in this browser mode.'); }
+    catch { if (!saveWarned) { saveWarned = true; toast('alert', 'Progress can’t be saved here', 'This browser is blocking storage (private mode?).'); } }
   }
 
   let state = load();
 
-  // New day: clear checkboxes; if yesterday wasn't perfect, the streak is broken.
   function rollover() {
     let changed = false;
     if (state.today.date !== dayKey()) { state.today = freshToday(); changed = true; }
@@ -344,19 +798,20 @@
     return changed;
   }
 
-  // ---------- core logic ----------
+  // ================= scoring =================
   const isPerfect = () => state.today.checks.every(Boolean);
-  const addPoints = delta => {
+  const doneCount = () => state.today.checks.filter(Boolean).length;
+  function addPoints(delta, countXp) {
     state.points = Math.max(0, state.points + delta);
     state.best = Math.max(state.best, state.points);
-  };
-
+    if (countXp) state.xp = Math.max(0, state.xp + delta);
+  }
   function markPerfect() {
     const undo = { streak: state.streak, lastPerfect: state.lastPerfect, bonus: false };
     state.streak = state.lastPerfect === yesterdayKey() ? state.streak + 1 : 1;
     state.lastPerfect = state.today.date;
     if (state.streak >= STREAK_GOAL) {
-      addPoints(STREAK_BONUS);
+      addPoints(STREAK_BONUS, true);
       state.streak = 0;
       state.bonuses += 1;
       undo.bonus = true;
@@ -364,315 +819,711 @@
     state.today.perfectUndo = undo;
     return undo.bonus;
   }
-  // If today stops being perfect (a box is unchecked), roll back today's streak credit (and bonus).
   function unmarkPerfect() {
     const undo = state.today.perfectUndo;
     if (!undo) return;
     state.streak = undo.streak;
     state.lastPerfect = undo.lastPerfect;
-    if (undo.bonus) { addPoints(-STREAK_BONUS); state.bonuses = Math.max(0, state.bonuses - 1); }
+    if (undo.bonus) { addPoints(-STREAK_BONUS, true); state.bonuses = Math.max(0, state.bonuses - 1); }
     state.today.perfectUndo = null;
+  }
+  function logToday(extra) {
+    const k = state.today.date;
+    const e = state.log[k] || {};
+    e.c = state.today.checks.map(b => (b ? 1 : 0));
+    e.p = isPerfect();
+    if (extra) Object.assign(e, extra(e));
+    state.log[k] = e;
+  }
+
+  // ================= derived stats =================
+  const levelFloor = L => 5 * L * (L - 1);       // L1:0, L2:10, L3:30, L4:60, L5:100, L6:150 …
+  function levelInfo(xp = state.xp) {
+    let L = 1;
+    while (xp >= levelFloor(L + 1)) L++;
+    const floor = levelFloor(L), next = levelFloor(L + 1);
+    return { L, floor, next, title: LEVEL_TITLES[Math.min(L - 1, LEVEL_TITLES.length - 1)], pct: ((xp - floor) / (next - floor)) * 100 };
+  }
+  function stats() {
+    const keys = Object.keys(state.log).sort();
+    const counts = HABITS.map(() => 0);
+    let perfectDays = 0, overs = 0, tracked = 0;
+    for (const k of keys) {
+      const e = state.log[k];
+      const c = Array.isArray(e.c) ? e.c : [];
+      if (c.some(Boolean) || e.w) tracked++;
+      c.forEach((v, i) => { if (v && i < counts.length) counts[i]++; });
+      if (e.p) perfectDays++;
+      overs += nat(e.o);
+    }
+    // longest run of consecutive perfect days
+    let longest = 0, run = 0, prev = null;
+    for (const k of keys) {
+      if (!state.log[k].p) { run = 0; prev = k; continue; }
+      run = prev && addDays(prev, 1) === k && state.log[prev].p ? run + 1 : 1;
+      longest = Math.max(longest, run);
+      prev = k;
+    }
+    // current run ending today (or yesterday if today isn't perfect yet)
+    let current = 0;
+    let cursor = state.log[dayKey()] && state.log[dayKey()].p ? dayKey() : yesterdayKey();
+    while (state.log[cursor] && state.log[cursor].p) { current++; cursor = addDays(cursor, -1); }
+    return { counts, perfectDays, overs, tracked, longest, current, totalChecks: counts.reduce((a, b) => a + b, 0) };
+  }
+
+  // ================= badges =================
+  const BADGES = [
+    { id: 'first',    name: 'First Step',      desc: 'Tick your first habit',              icon: 'star',     color: 'var(--yellow)', goal: 1,   val: s => s.totalChecks },
+    { id: 'perfect1', name: 'Perfect Day',     desc: 'Complete all 5 habits in a day',     icon: 'check',    color: 'var(--green)',  goal: 1,   val: s => s.perfectDays },
+    { id: 'run3',     name: 'Hat Trick',       desc: '3 perfect days in a row',            icon: 'flame',    color: 'var(--orange)', goal: 3,   val: s => s.longest },
+    { id: 'week1',    name: 'Week Warrior',    desc: 'Earn the 7-day +5 bonus',            icon: 'shield',   color: 'var(--blue)',   goal: 1,   val: () => state.bonuses },
+    { id: 'week4',    name: 'Monthly Master',  desc: 'Earn the 7-day bonus 4 times',       icon: 'crown',    color: 'var(--purple)', goal: 4,   val: () => state.bonuses },
+    { id: 'water',    name: 'Hydrated',        desc: 'Drink 2L of water on 10 days',       icon: 'drop',     color: 'var(--teal)',   goal: 10,  val: s => s.counts[1] },
+    { id: 'gym',      name: 'Gym Rat',         desc: 'Work out on 20 days',                icon: 'dumbbell', color: 'var(--green)',  goal: 20,  val: s => s.counts[3] },
+    { id: 'sugar',    name: 'Sugar Free',      desc: 'No snacks or sugar on 14 days',      icon: 'candyNo',  color: 'var(--pink)',   goal: 14,  val: s => s.counts[2] },
+    { id: 'clean',    name: 'Clean Eater',     desc: 'No fast food on 30 days',            icon: 'burgerNo', color: 'var(--orange)', goal: 30,  val: s => s.counts[0] },
+    { id: 'cals',     name: 'Calorie Captain', desc: 'Stay under 1,800 cals on 30 days',   icon: 'gauge',    color: 'var(--purple)', goal: 30,  val: s => s.counts[4] },
+    { id: 'p50',      name: 'Half Century',    desc: 'Reach 50 points',                    icon: 'target',   color: 'var(--yellow)', goal: 50,  val: () => state.best },
+    { id: 'p100',     name: 'Centurion',       desc: 'Reach 100 points',                   icon: 'trophy',   color: 'var(--yellow)', goal: 100, val: () => state.best },
+    { id: 'p250',     name: 'Quarter K',       desc: 'Reach 250 points',                   icon: 'rocket',   color: 'var(--pink)',   goal: 250, val: () => state.best },
+    { id: 'p500',     name: 'High Roller',     desc: 'Reach 500 points',                   icon: 'crown',    color: 'var(--yellow)', goal: 500, val: () => state.best },
+    { id: 'comeback', name: 'Comeback',        desc: 'Get back to 25 points after a wipeout', icon: 'heart', color: 'var(--red)',    goal: 25,  val: () => (state.wipeouts.length ? state.points : 0) },
+    { id: 'lvl5',     name: 'Level 5',         desc: 'Reach Level 5',                      icon: 'level',    color: 'var(--indigo)', goal: 5,   val: () => levelInfo().L }
+  ];
+  function checkBadges(silent) {
+    const s = stats();
+    const fresh = [];
+    for (const b of BADGES) {
+      if (state.badges[b.id]) continue;
+      if (b.val(s) >= b.goal) { state.badges[b.id] = dayKey(); fresh.push(b); }
+    }
+    if (!silent) fresh.forEach((b, i) => setTimeout(() => toast(b.icon, `Badge unlocked: ${b.name}`, b.desc, b.color), 600 + i * 2900));
+    return fresh;
+  }
+
+  // ================= mutations =================
+  function mutate(action, anim) {
+    rollover();
+    const before = { best: state.best, level: levelInfo().L };
+    const events = action() || [];
+    const after = levelInfo();
+    const tiersBefore = Math.floor(before.best / STEP), tiersAfter = Math.floor(state.best / STEP);
+    for (let t = tiersBefore + 1; t <= tiersAfter; t++) events.push({ kind: 'milestone', tier: t * STEP });
+    if (after.L > before.level) events.push({ kind: 'level', info: after });
+    checkBadges(false);
+    save();
+    render(anim);
+    if (events.length) setTimeout(() => events.forEach(e => celebrate(e)), 380);
   }
 
   function toggleHabit(i, el) {
-    rollover();
-    const wasPerfect = isPerfect();
-    const checked = !state.today.checks[i];
-    state.today.checks[i] = checked;
-    addPoints(checked ? 1 : -1);
-    let bonus = false;
-    if (!wasPerfect && isPerfect()) bonus = markPerfect();
-    else if (wasPerfect && !isPerfect()) unmarkPerfect();
-    save();
-    render(checked ? 'bump' : 'drop');
-    if (el) floatText(el, checked ? '+1' : '−1', !checked);
-    if (bonus) setTimeout(celebrate, 350);
+    mutate(() => {
+      const events = [];
+      const wasPerfect = isPerfect();
+      const checked = !state.today.checks[i];
+      state.today.checks[i] = checked;
+      addPoints(checked ? 1 : -1, true);
+      if (!wasPerfect && isPerfect()) {
+        const bonus = markPerfect();
+        events.push(bonus ? { kind: 'bonus' } : { kind: 'perfect', streak: state.streak });
+      } else if (wasPerfect && !isPerfect()) unmarkPerfect();
+      logToday();
+      if (el) floatText(el, checked ? '+1' : '−1', !checked);
+      if (checked) { sfx(isPerfect() ? 'none' : 'tick'); buzz(15); } else sfx('untick');
+      return events;
+    }, state.today.checks[i] ? 'drop' : 'bump');
   }
 
   function penaltyOverCals() {
-    rollover();
-    const wasPerfect = isPerfect();
-    // You can't have stayed under 1,800 today — clear that box (its point is covered by the −5).
-    state.today.checks[CAL_HABIT] = false;
-    if (wasPerfect) unmarkPerfect();
-    addPoints(-5);
-    save();
-    render('drop');
-    toast('−5 points. Shake it off.');
+    mutate(() => {
+      const wasPerfect = isPerfect();
+      if (state.today.checks[CAL_HABIT]) { state.today.checks[CAL_HABIT] = false; state.xp = Math.max(0, state.xp - 1); }
+      if (wasPerfect) unmarkPerfect();
+      addPoints(-OVER_PENALTY, false);
+      logToday(e => ({ o: nat(e.o) + 1 }));
+      sfx('penalty'); buzz([40, 40, 40]);
+      toast('alert', '−5 points', 'Shake it off. Tomorrow is a fresh day.', 'var(--red)');
+    }, 'drop');
   }
 
   function penaltyFastFood() {
-    rollover();
-    state.wipeouts.unshift({
-      date: dayKey(),
-      ts: Date.now(),
-      pointsLost: state.points,
-      streakLost: state.streak
-    });
-    state.points = 0;
-    state.streak = 0;
-    state.lastPerfect = null;
-    state.today = freshToday();
-    save();
-    render('drop');
-    toast('Wiped out. Fresh start — you’ve got this.');
+    mutate(() => {
+      state.wipeouts.unshift({ date: dayKey(), ts: Date.now(), pointsLost: state.points, streakLost: state.streak });
+      state.points = 0;
+      state.streak = 0;
+      state.lastPerfect = null;
+      state.today = freshToday();
+      logToday(() => ({ w: true }));
+      sfx('wipe'); buzz([80, 50, 80]);
+      toast('heart', 'Wiped back to 0', 'Every streak starts with day one. You’ve got this.', 'var(--red)');
+    }, 'drop');
   }
 
-  // ---------- rendering ----------
+  // ================= rendering =================
   const $ = id => document.getElementById(id);
-  const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const checkSvg = '<svg viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>';
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-  function buildHabits() {
-    $('habits').innerHTML = HABITS.map((name, i) => `
-      <label class="card habit" data-i="${i}">
-        <input type="checkbox" data-i="${i}" aria-label="${escapeHtml(name)}">
-        <span class="box">${checkSvg}</span>
-        <span class="name">${escapeHtml(name)}</span>
-        <span class="pt">+1</span>
+  function fillIcons(root = document) {
+    root.querySelectorAll('[data-icon]').forEach(el => { if (!el.firstChild) el.innerHTML = ico(el.dataset.icon); });
+  }
+
+  function buildStatic() {
+    $('menuBtn').innerHTML = ico('menu');
+    $('closeBtn').innerHTML = ico('x');
+    fillIcons();
+    $('habits').innerHTML = HABITS.map((h, i) => `
+      <label class="habit" data-i="${i}" style="--c:${h.color}">
+        <input type="checkbox" data-i="${i}" aria-label="${esc(h.name)}">
+        <span class="h-icon">${ico(h.icon)}</span>
+        <span class="h-text"><span class="h-name">${esc(h.name)}</span><div class="h-sub">+1 point</div></span>
+        <span class="h-check">${ico('check')}</span>
       </label>`).join('');
     $('habits').addEventListener('change', e => {
       const input = e.target.closest('input[type=checkbox]');
-      if (!input) return;
-      toggleHabit(Number(input.dataset.i), input.closest('.habit'));
+      if (input) toggleHabit(Number(input.dataset.i), input.closest('.habit'));
     });
-    $('dots').innerHTML = Array.from({ length: STREAK_GOAL }, () => '<i></i>').join('');
+    $('flames').innerHTML = Array.from({ length: STREAK_GOAL }, () => '<i></i>').join('');
+    const r = 50, circ = 2 * Math.PI * r;
+    $('ringFill').style.strokeDasharray = circ;
+    $('ringFill').style.strokeDashoffset = circ;
   }
 
-  let lastPoints = null;
+  let shownPoints = null;
+  function animateNumber(el, from, to) {
+    if (from === null || from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = to; return; }
+    const start = performance.now(), dur = 450;
+    (function step(now) {
+      const t = Math.min(1, (now - start) / dur);
+      const v = Math.round(from + (to - from) * (1 - Math.pow(1 - t, 3)));
+      el.textContent = v;
+      if (t < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
   function render(anim) {
-    $('todayLabel').textContent = prettyDate(state.today.date);
+    const lvl = levelInfo();
+    const s = stats();
+    const done = doneCount();
 
+    // top bar + drawer
+    $('chipStreak').innerHTML = `${ico('flame')}<span class="num">${state.streak}</span>`;
+    $('chipLevel').innerHTML = `${ico('bolt')}<span class="num">${lvl.L}</span>`;
+    $('dAvatar').textContent = lvl.L;
+    $('dLevel').textContent = `Level ${lvl.L} · ${lvl.title}`;
+    $('dXp').textContent = `${state.xp} XP total`;
+    $('dBar').style.width = lvl.pct + '%';
+    $('navToday').textContent = `${done}/5`;
+    const unclaimed = unlockedTiers().filter(t => !state.claimed[t]).length;
+    $('navRewards').textContent = unclaimed || '';
+    $('navRewards').className = 'count' + (unclaimed ? ' hot' : '');
+    $('navBadges').textContent = `${Object.keys(state.badges).length}/${BADGES.length}`;
+
+    // hero
+    $('todayDate').textContent = pretty(state.today.date);
     const p = $('points');
-    p.textContent = state.points;
-    if (anim && lastPoints !== null && lastPoints !== state.points) {
-      p.classList.remove('bump', 'drop');
-      void p.offsetWidth;
-      p.classList.add(anim);
-      setTimeout(() => p.classList.remove(anim), 260);
+    p.classList.toggle('long', String(state.points).length >= 4);
+    animateNumber(p, shownPoints, state.points);
+    if (anim && shownPoints !== null && shownPoints !== state.points) {
+      p.classList.remove('bump', 'drop'); void p.offsetWidth; p.classList.add(anim);
+      setTimeout(() => p.classList.remove(anim), 280);
     }
-    lastPoints = state.points;
+    shownPoints = state.points;
+    const toNext = STEP - (state.points % STEP);
+    $('heroNote').textContent = state.points > 0 && state.points === state.best ? 'You’re at your all-time high' : `${toNext} to the next 50`;
+    const circ = 2 * Math.PI * 50;
+    $('ringFill').style.strokeDashoffset = circ * (1 - done / 5);
+    $('ringNum').textContent = `${done}/5`;
+    $('lvlName').textContent = `Level ${lvl.L}`;
+    $('lvlTitle').textContent = lvl.title;
+    $('lvlXp').textContent = `${state.xp - lvl.floor} / ${lvl.next - lvl.floor} XP`;
+    $('lvlBar').style.width = lvl.pct + '%';
 
-    const toNext = MILESTONE_STEP - (state.points % MILESTONE_STEP);
-    $('pointsSub').textContent = state.points === state.best && state.points > 0
-      ? 'New personal best territory 🔥'
-      : `${toNext} to the next 50`;
-
+    // tiles
     $('best').textContent = state.best;
+    $('bestFoot').textContent = state.best > 0 && state.points === state.best ? 'You’re on it right now' : `${state.best - state.points} above current`;
     $('streak').textContent = state.streak;
-    [...$('dots').children].forEach((d, i) => d.classList.toggle('on', i < state.streak));
+    [...$('flames').children].forEach((d, i) => d.classList.toggle('on', i < state.streak));
 
-    const checks = state.today.checks;
+    // week strip
+    const today = dayKey();
+    let week = '';
+    for (let i = 6; i >= 0; i--) {
+      const k = addDays(today, -i);
+      const e = state.log[k];
+      const n = e && Array.isArray(e.c) ? e.c.filter(Boolean).length : 0;
+      let cls = 'dot', inner = '';
+      if (e && e.w) { cls += ' wiped'; inner = ico('x'); }
+      else if (e && e.p) { cls += ' perfect'; inner = ico('check'); }
+      else if (n > 0) { cls += ' partial'; inner = `<span>${n}</span>`; }
+      else inner = `<span>${parseKey(k).getDate()}</span>`;
+      const label = parseKey(k).toLocaleDateString(undefined, { weekday: 'narrow' });
+      week += `<div class="day${k === today ? ' today' : ''}"><span>${label}</span><div class="${cls}" style="--p:${n * 20}" title="${esc(pretty(k))}: ${n}/5">${inner}</div></div>`;
+    }
+    $('week').innerHTML = week;
+    $('runAside').textContent = s.current > 0 ? `${plural(s.current, 'perfect day')} in a row` : '';
+
+    // habits
     document.querySelectorAll('#habits .habit').forEach(el => {
-      const i = Number(el.dataset.i);
-      el.classList.toggle('checked', checks[i]);
-      el.querySelector('input').checked = checks[i];
+      const i = Number(el.dataset.i), c = state.today.checks[i];
+      el.classList.toggle('checked', c);
+      el.querySelector('input').checked = c;
+      el.querySelector('.h-sub').textContent = c ? 'Done · +1 point' : '+1 point';
     });
-    const done = checks.filter(Boolean).length;
-    $('todayCount').textContent = `${done}/5 done today`;
-    $('todayPerfect').textContent = done === 5 ? 'Perfect day ✓' : '';
-    $('todayPerfect').className = done === 5 ? 'perfect' : '';
+    $('habitCount').textContent = `${done} of 5`;
+    const gl = $('goalLine');
+    gl.classList.toggle('done', done === 5);
+    gl.innerHTML = done === 5
+      ? `${ico('check')} Perfect day locked in. Come back tomorrow for day ${Math.min(state.streak + 1, STREAK_GOAL)}.`
+      : done === 0 ? 'Tap a habit when you’ve done it.' : `${plural(5 - done, 'more habit')} for a perfect day.`;
+    if (done === 5 && state.streak === 0 && state.today.perfectUndo && state.today.perfectUndo.bonus) gl.innerHTML = `${ico('crown')} Week complete! +5 bonus earned. A new week starts tomorrow.`;
 
-    renderMilestones();
-    renderHistory();
+    renderNextReward();
+    renderRewards();
+    renderBadges(s);
+    renderStats(s);
   }
 
-  function renderMilestones() {
-    const wrap = $('milestones');
-    const unlockedCount = Math.floor(state.best / MILESTONE_STEP);
-    const focused = document.activeElement && document.activeElement.dataset.tier;
-    // Don't rebuild while typing into a field (keeps cursor/focus intact).
-    if (focused && wrap.dataset.count === String(unlockedCount)) {
-      updateLockedBar();
-      return;
+  // ---------- rewards ----------
+  const unlockedTiers = () => Array.from({ length: Math.floor(state.best / STEP) }, (_, k) => (k + 1) * STEP);
+  function renderNextReward() {
+    const nextTier = (Math.floor(state.best / STEP) + 1) * STEP;
+    const unclaimed = unlockedTiers().filter(t => !state.claimed[t]);
+    let tier, label, meta, pct;
+    if (unclaimed.length) {
+      tier = unclaimed[0];
+      label = 'Unlocked · ready to claim';
+      meta = `<span>You earned this at ${tier} points</span><span>Claim it</span>`;
+      pct = 100;
+    } else {
+      tier = nextTier;
+      const left = Math.max(0, tier - state.points);
+      label = `${tier} points`;
+      pct = Math.max(0, Math.min(100, ((state.points - (tier - STEP)) / STEP) * 100));
+      meta = `<span class="num">${state.points} / ${tier} points</span><span class="num">${left} to go</span>`;
     }
+    const text = (state.rewards[tier] || '').trim();
+    $('nextReward').innerHTML = `
+      <div class="reward-cover"><span class="big-gift">${ico('gift')}</span><span class="pill glass">${esc(label)}</span></div>
+      <div class="reward-body">
+        <div class="reward-title${text ? '' : ' placeholder'}">${text ? esc(text) : 'Add a reward for ' + tier + ' points'}</div>
+        <div class="reward-meta">${meta}</div>
+        <div class="bar gold"><span style="width:${pct}%"></span></div>
+      </div>`;
+  }
+
+  function renderRewards() {
+    const unlocked = unlockedTiers();
+    const claimedCount = unlocked.filter(t => state.claimed[t]).length;
+    const nextTier = (unlocked.length + 1) * STEP;
+    $('rewardSummary').innerHTML = `
+      <div><b class="num" style="color:var(--yellow)">${unlocked.length}</b><span>Unlocked</span></div>
+      <div><b class="num" style="color:var(--green)">${claimedCount}</b><span>Claimed</span></div>
+      <div><b class="num">${Math.max(0, nextTier - state.points)}</b><span>Points to next</span></div>`;
+
+    const highestFilled = Math.max(0, ...Object.keys(state.rewards).filter(k => (state.rewards[k] || '').trim()).map(Number).filter(Number.isFinite));
+    const count = Math.max(unlocked.length + 3, highestFilled / STEP, 6);
+    const sig = JSON.stringify([count, unlocked.length, state.claimed, state.points]);
+    const wrap = $('path');
+    const focused = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.tier;
+    if (focused && wrap.dataset.sig === sig) return;   // keep the cursor while typing
+    wrap.dataset.sig = sig;
+
     let html = '';
-    for (let k = 1; k <= unlockedCount; k++) {
-      const tier = k * MILESTONE_STEP;
-      const val = state.rewards[tier] || '';
+    for (let k = 1; k <= count; k++) {
+      const tier = k * STEP;
+      const isUnlocked = tier <= state.best;
+      const isClaimed = isUnlocked && !!state.claimed[tier];
+      const isNext = tier === nextTier;
+      const cls = isClaimed ? 'claimed unlocked' : isUnlocked ? 'unlocked' : isNext ? 'next' : 'locked';
+      const node = isClaimed ? ico('check') : isUnlocked ? ico('gift') : isNext ? `<span class="num">${tier}</span>` : ico('lock');
+      const pill = isClaimed ? `<span class="pill claimed">Claimed</span>`
+        : isUnlocked ? `<span class="pill unlocked">Unlocked</span>`
+        : isNext ? `<span class="pill next">Up next</span>` : `<span class="pill locked">Locked</span>`;
+      let extra = '';
+      if (isUnlocked) {
+        extra = `<button class="btn3d small ${isClaimed ? 'ghost' : 'gold'}" data-claim="${tier}">${isClaimed ? 'Claimed on ' + esc(pretty(state.claimed[tier], { month: 'short', day: 'numeric' })) + ' · Undo' : 'Mark as claimed'}</button>`;
+      } else if (isNext) {
+        const pct = Math.max(0, Math.min(100, ((state.points - (tier - STEP)) / STEP) * 100));
+        extra = `<div class="tier-progress"><span class="num">${tier - state.points} points to unlock</span><div class="bar gold"><span style="width:${pct}%"></span></div></div>`;
+      }
       html += `
-        <div class="card ms">
-          <div class="tier num">${tier}</div>
-          <div class="body">
-            <div class="t">Unlocked reward</div>
-            <input type="text" data-tier="${tier}" maxlength="120" value="${escapeHtml(val)}" placeholder="Type your reward…" aria-label="Reward for ${tier} points">
+        <div class="tier ${cls}">
+          <div class="node">${node}</div>
+          <div class="card tier-card">
+            <div class="tier-top"><h3 class="num">${tier} points</h3>${pill}</div>
+            <input class="field" type="text" id="reward-${tier}" data-tier="${tier}" maxlength="120" value="${esc(state.rewards[tier] || '')}" placeholder="${isUnlocked ? 'What’s your reward?' : 'Plan a reward for this tier'}" aria-label="Reward for ${tier} points">
+            ${extra}
           </div>
         </div>`;
     }
-    const next = (unlockedCount + 1) * MILESTONE_STEP;
-    html += `
-      <div class="card ms locked">
-        <div class="tier num">${next}</div>
-        <div class="body">
-          <div class="t">Locked · reach ${next} points</div>
-          <div class="hint" id="lockedHint"></div>
-          <div class="bar"><span id="lockedBar"></span></div>
-        </div>
-      </div>`;
     wrap.innerHTML = html;
-    wrap.dataset.count = String(unlockedCount);
-    updateLockedBar();
-  }
-  function updateLockedBar() {
-    const next = (Math.floor(state.best / MILESTONE_STEP) + 1) * MILESTONE_STEP;
-    const prev = next - MILESTONE_STEP;
-    const pct = Math.max(0, Math.min(100, ((state.points - prev) / MILESTONE_STEP) * 100));
-    const left = next - state.points;
-    const hint = $('lockedHint'), bar = $('lockedBar');
-    if (hint) hint.textContent = `${left} point${left === 1 ? '' : 's'} to unlock`;
-    if (bar) bar.style.width = pct + '%';
   }
 
-  function renderHistory() {
-    const list = $('history');
-    if (!state.wipeouts.length) {
-      list.innerHTML = '<li class="empty">No wipeouts yet. Keep it that way.</li>';
-      return;
+  // ---------- badges ----------
+  function renderBadges(s) {
+    const got = Object.keys(state.badges).length;
+    $('badgeSub').textContent = `${got} of ${BADGES.length} earned. Keep going to collect them all.`;
+    $('badges').innerHTML = BADGES.map(b => {
+      const when = state.badges[b.id];
+      const v = Math.min(b.val(s), b.goal);
+      const foot = when
+        ? `<span class="when">Earned ${esc(pretty(when, { month: 'short', day: 'numeric' }))}</span>`
+        : `<div class="bar gold"><span style="width:${(v / b.goal) * 100}%"></span></div><span class="prog num">${v} / ${b.goal}</span>`;
+      return `<div class="card badge${when ? '' : ' locked'}">
+        <div class="medal" style="--c:${b.color}">${ico(when ? b.icon : 'lock')}</div>
+        <h4>${esc(b.name)}</h4><p>${esc(b.desc)}</p>${foot}</div>`;
+    }).join('');
+  }
+
+  // ---------- stats ----------
+  function renderStats(s) {
+    const kpis = [
+      [state.xp, 'Total XP earned', 'var(--purple)'],
+      [s.perfectDays, 'Perfect days', 'var(--green)'],
+      [s.longest, 'Longest perfect run', 'var(--orange)'],
+      [state.bonuses, 'Weekly bonuses', 'var(--yellow)'],
+      [s.tracked, 'Days tracked', 'var(--text)'],
+      [s.overs, 'Over-calorie days', 'var(--red)']
+    ];
+    $('kpis').innerHTML = kpis.map(([v, l, c]) => `<div class="card kpi"><b class="num" style="color:${c}">${v}</b><span>${l}</span></div>`).join('');
+
+    let heat = '';
+    const today = dayKey();
+    for (let i = 34; i >= 0; i--) {
+      const k = addDays(today, -i);
+      const e = state.log[k];
+      const n = e && Array.isArray(e.c) ? e.c.filter(Boolean).length : 0;
+      let bg = 'var(--card-2)';
+      if (e && e.w) bg = 'var(--red)';
+      else if (e && e.p) bg = 'var(--green)';
+      else if (n >= 3) bg = 'rgba(48,209,88,.6)';
+      else if (n >= 1) bg = 'rgba(48,209,88,.3)';
+      heat += `<i class="${k === today ? 'today' : ''}" style="background:${bg}" title="${esc(pretty(k))}: ${n}/5${e && e.w ? ' · wipeout' : ''}"></i>`;
     }
-    list.innerHTML = state.wipeouts.map(w => `
-      <li>
-        <span>${escapeHtml(prettyDate(w.date))}</span>
-        <span class="lost num">−${Number(w.pointsLost) || 0} pts${w.streakLost ? ` · ${w.streakLost}/7 streak` : ''}</span>
-      </li>`).join('');
+    $('heat').innerHTML = heat;
+
+    const max = Math.max(1, s.tracked);
+    $('habitStats').innerHTML = HABITS.map((h, i) => `
+      <div class="row habit-stat">
+        <span class="ico" style="background:${h.color};color:var(--on-accent)">${ico(h.icon)}</span>
+        <div class="grow"><div><span>${esc(h.name)}</span><span class="meta num">${s.counts[i]}</span></div>
+        <div class="bar"><span style="width:${(s.counts[i] / max) * 100}%;background:${h.color}"></span></div></div>
+      </div>`).join('');
+
+    $('wipeCount').textContent = state.wipeouts.length ? plural(state.wipeouts.length, 'wipeout') : '';
+    $('history').innerHTML = state.wipeouts.length
+      ? state.wipeouts.map(w => `
+        <div class="row wipe-row">
+          <div class="grow">${esc(pretty(w.date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }))}</div>
+          <span class="lost num">−${nat(w.pointsLost)} pts${w.streakLost ? ` · ${w.streakLost}/7 streak` : ''}</span>
+        </div>`).join('')
+      : '<div class="empty">No wipeouts yet. Keep it that way.</div>';
   }
 
-  // ---------- milestone editing ----------
-  $('milestones').addEventListener('input', e => {
+  // ================= views + drawer =================
+  const VIEWS = { today: 'Today', rewards: 'Rewards', badges: 'Badges', stats: 'Stats & History', prefs: 'Settings' };
+  function setView(name, fromNav) {
+    if (!VIEWS[name]) name = 'today';
+    document.querySelectorAll('.view').forEach(v => { v.hidden = v.dataset.view !== name; });
+    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+    $('barTitle').textContent = VIEWS[name];
+    if (state.settings.view !== name) { state.settings.view = name; save(); }
+    if (fromNav) window.scrollTo({ top: 0 });
+    onScroll();
+  }
+  function openDrawer(open) {
+    $('drawer').classList.toggle('open', open);
+    $('scrim').classList.toggle('open', open);
+    $('drawer').setAttribute('aria-hidden', String(!open));
+    $('menuBtn').setAttribute('aria-expanded', String(open));
+    if (open) { const a = document.querySelector('#nav button.active') || document.querySelector('#nav button'); a.focus(); }
+    else $('menuBtn').focus({ preventScroll: true });
+  }
+  $('menuBtn').addEventListener('click', () => openDrawer(true));
+  $('closeBtn').addEventListener('click', () => openDrawer(false));
+  $('scrim').addEventListener('click', () => openDrawer(false));
+  $('nav').addEventListener('click', e => {
+    const b = e.target.closest('button[data-nav]');
+    if (!b) return;
+    setView(b.dataset.nav, true);
+    openDrawer(false);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('drawer').classList.contains('open')) openDrawer(false); });
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (g) setView(g.dataset.go, true);
+  });
+  $('chipStreak').addEventListener('click', () => setView('today', true));
+  $('chipLevel').addEventListener('click', () => setView('badges', true));
+  function onScroll() { $('topbar').classList.toggle('scrolled', window.scrollY > 40); }
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // ================= rewards editing =================
+  $('path').addEventListener('input', e => {
     const t = e.target.dataset.tier;
     if (!t) return;
-    const v = e.target.value.trim();
-    if (v) state.rewards[t] = e.target.value; else delete state.rewards[t];
+    if (e.target.value.trim()) state.rewards[t] = e.target.value; else delete state.rewards[t];
     save();
+    renderNextReward();
+  });
+  $('path').addEventListener('click', e => {
+    const b = e.target.closest('[data-claim]');
+    if (!b) return;
+    const t = b.dataset.claim;
+    if (state.claimed[t]) delete state.claimed[t];
+    else {
+      state.claimed[t] = dayKey();
+      const text = (state.rewards[t] || '').trim();
+      celebrate({ kind: 'claim', tier: Number(t), text });
+    }
+    save();
+    render();
   });
 
-  // ---------- confirm dialog ----------
+  // ================= confirm dialog =================
   const dlg = $('confirmDialog');
-  function confirmAction(title, body, okLabel) {
+  function confirmAction({ title, body, ok, icon = 'alert' }) {
     return new Promise(resolve => {
+      $('confirmIcon').innerHTML = ico(icon);
       $('confirmTitle').textContent = title;
       $('confirmBody').textContent = body;
-      $('confirmOk').textContent = okLabel;
-      if (typeof dlg.showModal !== 'function') { resolve(window.confirm(`${title}\n\n${body}`)); return; }
-      const done = ok => { dlg.close(); cleanup(); resolve(ok); };
-      const onOk = () => done(true);
-      const onCancel = () => done(false);
-      const onClose = () => { cleanup(); resolve(false); };
-      const cleanup = () => {
+      $('confirmOk').textContent = ok;
+      if (typeof dlg.showModal !== 'function') { resolve(false); return; }
+      const finish = v => { cleanup(); if (dlg.open) dlg.close(); resolve(v); };
+      const onOk = () => finish(true), onCancel = () => finish(false), onEsc = e => { e.preventDefault(); finish(false); };
+      const onBackdrop = e => { if (e.target === dlg) finish(false); };
+      function cleanup() {
         $('confirmOk').removeEventListener('click', onOk);
         $('confirmCancel').removeEventListener('click', onCancel);
-        dlg.removeEventListener('cancel', onClose);
-      };
+        dlg.removeEventListener('cancel', onEsc);
+        dlg.removeEventListener('click', onBackdrop);
+      }
       $('confirmOk').addEventListener('click', onOk);
       $('confirmCancel').addEventListener('click', onCancel);
-      dlg.addEventListener('cancel', onClose);
+      dlg.addEventListener('cancel', onEsc);
+      dlg.addEventListener('click', onBackdrop);
       dlg.showModal();
       $('confirmCancel').focus();
     });
   }
-
   $('btnOver').addEventListener('click', async () => {
-    const ok = await confirmAction('Went over 1,800 calories?', `This subtracts 5 points (you have ${state.points}). Points can't go below 0.`, 'Subtract 5');
+    const ok = await confirmAction({
+      title: 'Went over 1,800 calories?',
+      body: `This takes 5 points off your ${state.points}. Points can’t go below 0.${state.today.checks[CAL_HABIT] ? ' Today’s calorie box will be unticked too.' : ''}`,
+      ok: 'Subtract 5 points', icon: 'gauge'
+    });
     if (ok) penaltyOverCals();
   });
   $('btnFastFood').addEventListener('click', async () => {
-    const ok = await confirmAction('Ate fast food?', `This wipes your ${state.points} current points and ${state.streak}/7 perfect-day streak back to 0, and logs today in your Wipeout History. Your Personal Best and rewards are kept.`, 'Reset to 0');
+    const ok = await confirmAction({
+      title: 'Ate fast food?',
+      body: `This resets your ${state.points} points and ${state.streak}/7 perfect-day streak to 0, and adds today to your Wipeout History.`,
+      ok: 'Reset to 0', icon: 'burgerNo'
+    });
     if (ok) penaltyFastFood();
   });
+  $('btnResetAll').addEventListener('click', async () => {
+    const ok = await confirmAction({ title: 'Erase all data?', body: 'This deletes every point, reward, badge and log entry on this device. It can’t be undone.', ok: 'Erase everything', icon: 'trash' });
+    if (!ok) return;
+    const keep = state.settings;
+    state = defaults();
+    state.settings = Object.assign(state.settings, keep, { view: 'today' });
+    shownPoints = null;
+    save(); setView('today', true); render();
+    toast('trash', 'All data erased', 'Fresh start.');
+  });
 
-  // ---------- celebration ----------
-  function celebrate() {
+  // ================= settings =================
+  $('optSound').addEventListener('change', e => { state.settings.sound = e.target.checked; save(); if (e.target.checked) sfx('tick'); });
+  $('optHaptics').addEventListener('change', e => { state.settings.haptics = e.target.checked; save(); buzz(20); });
+  function syncSettings() { $('optSound').checked = !!state.settings.sound; $('optHaptics').checked = !!state.settings.haptics; }
+
+  // ================= celebrations =================
+  const queue = [];
+  let celebrating = false;
+  function celebrate(ev) { queue.push(ev); if (!celebrating) nextCelebration(); }
+  function nextCelebration() {
+    const ev = queue.shift();
+    if (!ev) { celebrating = false; return; }
+    celebrating = true;
+    let c = 'var(--yellow)', icon = 'star', big = '', title = '', body = '', btn = 'Continue', btnCls = 'gold', sound = 'perfect', boom = true;
+    if (ev.kind === 'perfect') {
+      c = 'var(--orange)'; icon = 'flame'; btnCls = '';
+      title = 'Perfect day!';
+      body = `All 5 habits done. That’s ${ev.streak}/7 toward your +5 weekly bonus.`;
+      big = `${ev.streak}/7`;
+    } else if (ev.kind === 'bonus') {
+      c = 'var(--yellow)'; icon = 'crown'; big = '+5';
+      title = '7 perfect days!'; body = 'Bonus points awarded. Your streak resets for a brand new week.'; sound = 'bonus';
+    } else if (ev.kind === 'level') {
+      c = 'var(--purple)'; icon = 'bolt'; big = `Level ${ev.info.L}`; btnCls = '';
+      title = 'Level up!'; body = `You’re now a ${ev.info.title}. Next level at ${ev.info.next} XP.`; sound = 'level';
+    } else if (ev.kind === 'milestone') {
+      c = 'var(--pink)'; icon = 'gift'; big = `${ev.tier}`; btn = 'See my reward'; btnCls = 'gold';
+      const t = (state.rewards[ev.tier] || '').trim();
+      title = 'Reward unlocked!';
+      body = t ? `You hit ${ev.tier} points. Time for: ${t}` : `You hit ${ev.tier} points. Add a reward for this tier in Rewards.`;
+      sound = 'bonus';
+    } else if (ev.kind === 'claim') {
+      c = 'var(--green)'; icon = 'gift'; btnCls = '';
+      title = 'Enjoy it!'; body = ev.text ? `${ev.text}. You earned it.` : `Reward for ${ev.tier} points claimed.`;
+    }
+    $('celIcon').style.setProperty('--c', c);
+    $('celBig').style.setProperty('--c', c);
+    $('celIcon').innerHTML = ico(icon);
+    $('celBig').textContent = big;
+    $('celBig').hidden = !big;
+    $('celTitle').textContent = title;
+    $('celBody').textContent = body;
+    $('celBtn').textContent = btn;
+    $('celBtn').className = 'btn3d' + (btnCls ? ' ' + btnCls : '');
+    $('celBtn').dataset.go = ev.kind === 'milestone' ? 'rewards' : '';
     $('celebrate').classList.add('show');
-    $('celebrateClose').focus();
-    confetti();
-    if (navigator.vibrate) navigator.vibrate([80, 60, 120]);
+    $('celBtn').focus({ preventScroll: true });
+    sfx(sound); buzz([60, 40, 120]);
+    if (boom) confetti();
   }
-  $('celebrateClose').addEventListener('click', () => $('celebrate').classList.remove('show'));
+  $('celBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const go = $('celBtn').dataset.go;
+    $('celebrate').classList.remove('show');
+    if (go) setView(go, true);
+    setTimeout(nextCelebration, 320);
+  });
 
   function confetti() {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const c = $('confetti'), ctx = c.getContext('2d');
+    const cv = $('confetti'), ctx = cv.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    c.width = innerWidth * dpr; c.height = innerHeight * dpr;
-    ctx.scale(dpr, dpr);
-    const colors = ['#3ee08f', '#f5c451', '#ffffff', '#5fb7ff', '#ff7ab8'];
-    const parts = Array.from({ length: 160 }, () => ({
-      x: innerWidth / 2 + (Math.random() - .5) * 80, y: innerHeight * .45,
-      vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4,
-      r: Math.random() * 6 + 3, rot: Math.random() * 6, vr: (Math.random() - .5) * .3,
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const colors = ['#30d158', '#ffd60a', '#ff9f0a', '#64d2ff', '#ff375f', '#bf5af2', '#ffffff'];
+    const parts = Array.from({ length: 180 }, () => ({
+      x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.38,
+      vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 5,
+      w: Math.random() * 8 + 4, h: Math.random() * 5 + 3, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.35,
       color: colors[(Math.random() * colors.length) | 0]
     }));
     const start = performance.now();
     (function frame(now) {
       ctx.clearRect(0, 0, innerWidth, innerHeight);
-      for (const p of parts) {
-        p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-        ctx.fillStyle = p.color; ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6);
-        ctx.restore();
+      for (const q of parts) {
+        q.vy += 0.36; q.vx *= 0.99; q.x += q.vx; q.y += q.vy; q.rot += q.vr;
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillStyle = q.color;
+        ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
       }
-      if (now - start < 3500) requestAnimationFrame(frame);
-      else ctx.clearRect(0, 0, innerWidth, innerHeight);
+      if (now - start < 3600) requestAnimationFrame(frame); else ctx.clearRect(0, 0, innerWidth, innerHeight);
     })(start);
   }
 
-  // ---------- little UI helpers ----------
+  // ================= feedback =================
   function floatText(el, text, neg) {
     const r = el.getBoundingClientRect();
     const f = document.createElement('div');
-    f.className = 'float num' + (neg ? ' neg' : '');
+    f.className = 'float' + (neg ? ' neg' : '');
     f.textContent = text;
-    f.style.left = (r.right - 52) + 'px';
-    f.style.top = (r.top + r.height / 2 - 14) + 'px';
+    f.style.left = (r.right - 74) + 'px';
+    f.style.top = (r.top + r.height / 2 - 16) + 'px';
     document.body.appendChild(f);
     setTimeout(() => f.remove(), 950);
+    const chk = el.querySelector('.h-check');
+    if (chk) { chk.classList.remove('pulse'); void chk.offsetWidth; chk.classList.add('pulse'); }
   }
+
   let toastTimer;
-  function toast(msg) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+  const toastQ = [];
+  let toasting = false;
+  function toast(icon, title, sub, color) {
+    toastQ.push({ icon, title, sub, color });
+    if (!toasting) nextToast();
+  }
+  function nextToast() {
+    const t = toastQ.shift();
+    if (!t) { toasting = false; return; }
+    toasting = true;
+    const el = $('toast');
+    el.innerHTML = `<span class="t-ico" style="${t.color ? `background:${t.color};color:var(--on-accent)` : ''}">${ico(t.icon)}</span><span>${esc(t.title)}${t.sub ? `<small>${esc(t.sub)}</small>` : ''}</span>`;
+    el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(nextToast, 420); }, 2600);
   }
 
-  // ---------- backup ----------
-  $('btnExport').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `habit-tracker-backup-${dayKey()}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
-  $('btnImport').addEventListener('click', () => $('importFile').click());
-  $('importFile').addEventListener('change', async e => {
-    const file = e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
+  let audio;
+  function sfx(kind) {
+    if (!state.settings.sound || kind === 'none') return;
     try {
-      const data = JSON.parse(await file.text());
-      const ok = await confirmAction('Import backup?', 'This replaces all current data with the backup file.', 'Import');
-      if (!ok) return;
-      state = sanitize(data);
-      rollover();
-      save();
-      $('milestones').dataset.count = '';
-      render();
-      toast('Backup imported.');
-    } catch { toast('That file isn’t a valid backup.'); }
-  });
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const seq = {
+        tick:    [[880, 0, 0.09, 'sine'], [1320, 0.06, 0.12, 'sine']],
+        untick:  [[520, 0, 0.1, 'sine']],
+        perfect: [[523, 0, .14, 'triangle'], [659, .1, .14, 'triangle'], [784, .2, .14, 'triangle'], [1047, .3, .3, 'triangle']],
+        bonus:   [[784, 0, .12, 'triangle'], [988, .1, .12, 'triangle'], [1175, .2, .12, 'triangle'], [1568, .3, .4, 'triangle']],
+        level:   [[440, 0, .12, 'square'], [660, .12, .12, 'square'], [880, .24, .3, 'square']],
+        penalty: [[300, 0, .16, 'sawtooth'], [200, .14, .25, 'sawtooth']],
+        wipe:    [[330, 0, .2, 'sawtooth'], [247, .18, .2, 'sawtooth'], [165, .36, .4, 'sawtooth']]
+      }[kind];
+      if (!seq) return;
+      const now = audio.currentTime;
+      for (const [f, at, dur, type] of seq) {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = type; o.frequency.value = f;
+        const vol = type === 'sine' || type === 'triangle' ? 0.12 : 0.04;
+        g.gain.setValueAtTime(0.0001, now + at);
+        g.gain.exponentialRampToValueAtTime(vol, now + at + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + at + dur);
+        o.connect(g).connect(audio.destination);
+        o.start(now + at); o.stop(now + at + dur + 0.02);
+      }
+    } catch { /* audio unavailable */ }
+  }
+  function buzz(p) { if (state.settings.haptics && navigator.vibrate) try { navigator.vibrate(p); } catch { /* ignore */ } }
 
-  // ---------- boot ----------
-  buildHabits();
+  // ================= backup (only present when the buttons exist) =================
+  if ($('btnExport')) {
+    $('btnExport').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `habit-tracker-backup-${dayKey()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('btnImport').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        const ok = await confirmAction({ title: 'Import backup?', body: 'This replaces everything on this device with the backup file.', ok: 'Import', icon: 'upload' });
+        if (!ok) return;
+        state = sanitize(data);
+        rollover(); checkBadges(true); save();
+        shownPoints = null; $('path').dataset.sig = '';
+        syncSettings(); render();
+        toast('check', 'Backup imported', '', 'var(--green)');
+      } catch { toast('alert', 'That file isn’t a valid backup', 'Choose a file made with Export backup.'); }
+    });
+  }
+
+  // ================= boot =================
+  buildStatic();
   rollover();
+  if (state.today.checks.some(Boolean) && !state.log[state.today.date]) logToday();
+  checkBadges(true);
+  save();
+  syncSettings();
+  setView(state.settings.view);
   render();
 
-  // Handle midnight while the app is open, and changes made in another tab.
   const tick = () => { if (rollover()) render(); };
   setInterval(tick, 30 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
   window.addEventListener('storage', e => {
-    if (e.key === STORAGE_KEY) { state = load(); $('milestones').dataset.count = ''; rollover(); render(); }
+    if (e.key !== STORAGE_KEY) return;
+    state = load(); rollover(); shownPoints = null; $('path').dataset.sig = ''; syncSettings(); render();
   });
 })();
 </script>
