@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="color-scheme" content="dark">
+<title>Habit Tracker</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #14171c;
+    --surface-2: #1b1f26;
+    --border: #262b34;
+    --text: #e8ebf0;
+    --muted: #8b93a1;
+    --faint: #5b6270;
+    --accent: #3ee08f;
+    --accent-dim: rgba(62, 224, 143, 0.14);
+    --gold: #f5c451;
+    --gold-dim: rgba(245, 196, 81, 0.14);
+    --danger: #ff4d5e;
+    --danger-dim: rgba(255, 77, 94, 0.12);
+    --radius: 16px;
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
+  header.top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  header.top h1 { font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  header.top .date { font-size: 13px; color: var(--faint); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  section { margin-top: 28px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Hero */
+  .hero { padding: 28px 20px 22px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% -20% auto; height: 120%;
+    background: radial-gradient(closest-side, rgba(62,224,143,.16), transparent 70%);
+    pointer-events: none;
+  }
+  .hero .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); position: relative; }
+  .hero .points {
+    position: relative; font-size: clamp(88px, 30vw, 140px); font-weight: 800; line-height: 1;
+    letter-spacing: -0.04em; color: var(--accent); margin: 6px 0 4px;
+    text-shadow: 0 0 40px rgba(62,224,143,.25);
+    transition: transform .25s cubic-bezier(.3,1.6,.5,1), color .3s;
+  }
+  .hero .points.bump { transform: scale(1.08); }
+  .hero .points.drop { color: var(--danger); transform: scale(.94); }
+  .hero .sub { position: relative; font-size: 13px; color: var(--faint); }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .stat { padding: 16px; }
+  .stat .label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { font-size: 34px; font-weight: 750; letter-spacing: -0.02em; margin-top: 2px; }
+  .stat .value small { font-size: 18px; color: var(--faint); font-weight: 600; }
+  .stat.best .value { color: var(--gold); }
+  .dots { display: flex; gap: 5px; margin-top: 8px; }
+  .dots i { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border); transition: background .3s; }
+  .dots i.on { background: var(--accent); border-color: var(--accent); }
+
+  /* Habits */
+  .habits { display: flex; flex-direction: column; gap: 8px; }
+  .habit {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 60px;
+    cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+    transition: background .2s, border-color .2s, transform .1s;
+  }
+  .habit:active { transform: scale(.99); }
+  .habit input { position: absolute; opacity: 0; pointer-events: none; }
+  .habit .box {
+    flex: none; width: 28px; height: 28px; border-radius: 9px; border: 2px solid var(--faint);
+    display: grid; place-items: center; transition: all .2s;
+  }
+  .habit .box svg { width: 16px; height: 16px; stroke: #06140c; stroke-width: 3.2; fill: none; opacity: 0; transform: scale(.5); transition: all .2s; }
+  .habit .name { flex: 1; font-size: 16px; font-weight: 550; }
+  .habit .pt { font-size: 13px; font-weight: 700; color: var(--faint); }
+  .habit.checked { background: var(--accent-dim); border-color: rgba(62,224,143,.4); }
+  .habit.checked .box { background: var(--accent); border-color: var(--accent); }
+  .habit.checked .box svg { opacity: 1; transform: scale(1); }
+  .habit.checked .pt { color: var(--accent); }
+  .habit input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .today-summary { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin: 10px 2px 0; }
+  .today-summary .perfect { color: var(--accent); font-weight: 600; }
+
+  /* Milestones */
+  .milestones { display: flex; flex-direction: column; gap: 8px; }
+  .ms { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .ms .tier {
+    flex: none; width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center;
+    background: var(--gold-dim); color: var(--gold); font-weight: 800; font-size: 18px;
+  }
+  .ms .body { flex: 1; min-width: 0; }
+  .ms .body .t { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .ms input[type=text] {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 16px;
+  }
+  .ms input[type=text]:focus { outline: none; border-color: var(--gold); }
+  .ms input[type=text]::placeholder { color: var(--faint); }
+  .ms.locked .tier { background: var(--surface-2); color: var(--faint); }
+  .ms.locked .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .ms.locked .bar span { display: block; height: 100%; background: var(--gold); border-radius: 3px; transition: width .4s; }
+  .ms.locked .hint { font-size: 14px; color: var(--muted); }
+
+  /* Penalties */
+  .penalties { display: flex; flex-direction: column; gap: 10px; }
+  .btn-danger {
+    width: 100%; min-height: 56px; padding: 14px 16px; border-radius: 14px; font: inherit; font-size: 16px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(255,77,94,.45); background: var(--danger-dim); color: var(--danger);
+    transition: background .15s, transform .1s;
+  }
+  .btn-danger:hover { background: rgba(255,77,94,.2); }
+  .btn-danger:active { transform: scale(.985); }
+  .btn-danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn-danger.solid:hover { background: #ff6573; }
+
+  .history { margin-top: 12px; padding: 4px 16px; }
+  .history ul { list-style: none; margin: 0; padding: 0; }
+  .history li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .history li:first-child { border-top: 0; }
+  .history li .lost { color: var(--danger); font-weight: 600; white-space: nowrap; }
+  .history .empty { padding: 14px 0; font-size: 14px; color: var(--faint); text-align: center; }
+
+  footer { margin-top: 36px; display: flex; justify-content: center; gap: 18px; font-size: 13px; }
+  footer button { background: none; border: 0; color: var(--faint); font: inherit; cursor: pointer; padding: 6px; text-decoration: underline; text-underline-offset: 3px; }
+  footer button:hover { color: var(--muted); }
+
+  /* Dialog */
+  dialog {
+    border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text);
+    padding: 24px 20px 18px; width: min(400px, calc(100vw - 32px));
+  }
+  dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(3px); }
+  dialog h3 { margin: 0 0 8px; font-size: 20px; }
+  dialog p { margin: 0 0 20px; color: var(--muted); font-size: 15px; }
+  dialog .actions { display: flex; gap: 10px; }
+  dialog .actions button { flex: 1; min-height: 48px; border-radius: 12px; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+
+  /* Celebration */
+  .celebrate {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+    background: rgba(5,8,6,.82); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .celebrate.show { opacity: 1; pointer-events: auto; }
+  .celebrate .inner { text-align: center; transform: scale(.8); transition: transform .5s cubic-bezier(.3,1.6,.5,1); }
+  .celebrate.show .inner { transform: scale(1); }
+  .celebrate .big { font-size: clamp(72px, 24vw, 120px); font-weight: 900; color: var(--gold); line-height: 1; text-shadow: 0 0 50px rgba(245,196,81,.5); }
+  .celebrate h3 { font-size: 24px; margin: 12px 0 6px; }
+  .celebrate p { color: var(--muted); margin: 0 0 22px; }
+  .celebrate button { min-height: 48px; padding: 0 28px; border-radius: 12px; border: 0; background: var(--gold); color: #1a1405; font: inherit; font-weight: 800; cursor: pointer; }
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 51; }
+
+  .float {
+    position: fixed; z-index: 40; font-weight: 800; font-size: 18px; color: var(--accent); pointer-events: none;
+    animation: floatUp .9s ease-out forwards;
+  }
+  .float.neg { color: var(--danger); }
+  @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 12px 18px; border-radius: 12px;
+    font-size: 14px; opacity: 0; transition: all .25s; z-index: 60; max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>Habit Tracker</h1>
+    <span class="date" id="todayLabel"></span>
+  </header>
+
+  <div class="card hero">
+    <div class="label">Current Points</div>
+    <div class="points num" id="points">0</div>
+    <div class="sub" id="pointsSub">&nbsp;</div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat best">
+      <div class="label">Personal Best</div>
+      <div class="value num" id="best">0</div>
+    </div>
+    <div class="card stat">
+      <div class="label">Perfect Days</div>
+      <div class="value num"><span id="streak">0</span><small>/7</small></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Today</h2>
+    <div class="habits" id="habits"></div>
+    <div class="today-summary">
+      <span id="todayCount">0/5 done</span>
+      <span id="todayPerfect"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Milestones</h2>
+    <div class="milestones" id="milestones"></div>
+  </section>
+
+  <section>
+    <h2>Penalties</h2>
+    <div class="penalties">
+      <button class="btn-danger" id="btnOver">Went Over 1,800 Cals (−5 Points)</button>
+      <button class="btn-danger solid" id="btnFastFood">I Ate Fast Food (Reset to 0)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Wipeout History</h2>
+    <div class="card history"><ul id="history"></ul></div>
+  </section>
+
+  <footer>
+    <button id="btnExport">Export backup</button>
+    <button id="btnImport">Import backup</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </footer>
+</main>
+
+<dialog id="confirmDialog">
+  <h3 id="confirmTitle"></h3>
+  <p id="confirmBody"></p>
+  <div class="actions">
+    <button class="btn-ghost" value="cancel" id="confirmCancel">Cancel</button>
+    <button class="btn-danger solid" value="ok" id="confirmOk">Confirm</button>
+  </div>
+</dialog>
+
+<div class="celebrate" id="celebrate" role="dialog" aria-modal="true" aria-labelledby="celebrateTitle">
+  <div class="inner">
+    <div class="big">+5</div>
+    <h3 id="celebrateTitle">7 Perfect Days!</h3>
+    <p>Bonus points awarded. Your streak resets for the next week.</p>
+    <button id="celebrateClose">Let's go</button>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'habitTracker.v1';
+  const HABITS = ['No fast food', 'Drink 2L water', 'No snacks/sugar', 'Do a workout', 'Stay under 1,800 cals'];
+  const CAL_HABIT = 4;
+  const STREAK_GOAL = 7;
+  const STREAK_BONUS = 5;
+  const MILESTONE_STEP = 50;
+
+  // ---------- dates (local time) ----------
+  const pad = n => String(n).padStart(2, '0');
+  const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  const prettyDate = key => {
+    const [y, m, d] = key.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // ---------- state ----------
+  const freshToday = () => ({ date: dayKey(), checks: HABITS.map(() => false), perfectUndo: null });
+  const defaults = () => ({
+    version: 1,
+    points: 0,
+    best: 0,
+    streak: 0,          // perfect days in the current 7-day run (0–6 shown; 7 triggers bonus then resets)
+    lastPerfect: null,  // date key of the most recent perfect day
+    today: freshToday(),
+    rewards: {},        // { "50": "New headphones", ... }
+    wipeouts: [],       // [{ date, ts, pointsLost, streakLost }]
+    bonuses: 0
+  });
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaults();
+      return sanitize(JSON.parse(raw));
+    } catch { return defaults(); }
+  }
+  function sanitize(s) {
+    const d = defaults();
+    if (!s || typeof s !== 'object') return d;
+    const n = v => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+    const out = {
+      version: 1,
+      points: n(s.points),
+      best: n(s.best),
+      streak: Math.min(n(s.streak), STREAK_GOAL - 1),
+      lastPerfect: typeof s.lastPerfect === 'string' ? s.lastPerfect : null,
+      today: d.today,
+      rewards: s.rewards && typeof s.rewards === 'object' ? s.rewards : {},
+      wipeouts: Array.isArray(s.wipeouts) ? s.wipeouts : [],
+      bonuses: n(s.bonuses)
+    };
+    if (s.today && typeof s.today.date === 'string' && Array.isArray(s.today.checks)) {
+      out.today = {
+        date: s.today.date,
+        checks: HABITS.map((_, i) => !!s.today.checks[i]),
+        perfectUndo: s.today.perfectUndo || null
+      };
+    }
+    out.best = Math.max(out.best, out.points);
+    return out;
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch { toast('Could not save — storage is unavailable in this browser mode.'); }
+  }
+
+  let state = load();
+
+  // New day: clear checkboxes; if yesterday wasn't perfect, the streak is broken.
+  function rollover() {
+    let changed = false;
+    if (state.today.date !== dayKey()) { state.today = freshToday(); changed = true; }
+    if (state.streak > 0 && state.lastPerfect && state.lastPerfect < yesterdayKey()) { state.streak = 0; changed = true; }
+    if (changed) save();
+    return changed;
+  }
+
+  // ---------- core logic ----------
+  const isPerfect = () => state.today.checks.every(Boolean);
+  const addPoints = delta => {
+    state.points = Math.max(0, state.points + delta);
+    state.best = Math.max(state.best, state.points);
+  };
+
+  function markPerfect() {
+    const undo = { streak: state.streak, lastPerfect: state.lastPerfect, bonus: false };
+    state.streak = state.lastPerfect === yesterdayKey() ? state.streak + 1 : 1;
+    state.lastPerfect = state.today.date;
+    if (state.streak >= STREAK_GOAL) {
+      addPoints(STREAK_BONUS);
+      state.streak = 0;
+      state.bonuses += 1;
+      undo.bonus = true;
+    }
+    state.today.perfectUndo = undo;
+    return undo.bonus;
+  }
+  // If today stops being perfect (a box is unchecked), roll back today's streak credit (and bonus).
+  function unmarkPerfect() {
+    const undo = state.today.perfectUndo;
+    if (!undo) return;
+    state.streak = undo.streak;
+    state.lastPerfect = undo.lastPerfect;
+    if (undo.bonus) { addPoints(-STREAK_BONUS); state.bonuses = Math.max(0, state.bonuses - 1); }
+    state.today.perfectUndo = null;
+  }
+
+  function toggleHabit(i, el) {
+    rollover();
+    const wasPerfect = isPerfect();
+    const checked = !state.today.checks[i];
+    state.today.checks[i] = checked;
+    addPoints(checked ? 1 : -1);
+    let bonus = false;
+    if (!wasPerfect && isPerfect()) bonus = markPerfect();
+    else if (wasPerfect && !isPerfect()) unmarkPerfect();
+    save();
+    render(checked ? 'bump' : 'drop');
+    if (el) floatText(el, checked ? '+1' : '−1', !checked);
+    if (bonus) setTimeout(celebrate, 350);
+  }
+
+  function penaltyOverCals() {
+    rollover();
+    const wasPerfect = isPerfect();
+    // You can't have stayed under 1,800 today — clear that box (its point is covered by the −5).
+    state.today.checks[CAL_HABIT] = false;
+    if (wasPerfect) unmarkPerfect();
+    addPoints(-5);
+    save();
+    render('drop');
+    toast('−5 points. Shake it off.');
+  }
+
+  function penaltyFastFood() {
+    rollover();
+    state.wipeouts.unshift({
+      date: dayKey(),
+      ts: Date.now(),
+      pointsLost: state.points,
+      streakLost: state.streak
+    });
+    state.points = 0;
+    state.streak = 0;
+    state.lastPerfect = null;
+    state.today = freshToday();
+    save();
+    render('drop');
+    toast('Wiped out. Fresh start — you’ve got this.');
+  }
+
+  // ---------- rendering ----------
+  const $ = id => document.getElementById(id);
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const checkSvg = '<svg viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>';
+
+  function buildHabits() {
+    $('habits').innerHTML = HABITS.map((name, i) => `
+      <label class="card habit" data-i="${i}">
+        <input type="checkbox" data-i="${i}" aria-label="${escapeHtml(name)}">
+        <span class="box">${checkSvg}</span>
+        <span class="name">${escapeHtml(name)}</span>
+        <span class="pt">+1</span>
+      </label>`).join('');
+    $('habits').addEventListener('change', e => {
+      const input = e.target.closest('input[type=checkbox]');
+      if (!input) return;
+      toggleHabit(Number(input.dataset.i), input.closest('.habit'));
+    });
+    $('dots').innerHTML = Array.from({ length: STREAK_GOAL }, () => '<i></i>').join('');
+  }
+
+  let lastPoints = null;
+  function render(anim) {
+    $('todayLabel').textContent = prettyDate(state.today.date);
+
+    const p = $('points');
+    p.textContent = state.points;
+    if (anim && lastPoints !== null && lastPoints !== state.points) {
+      p.classList.remove('bump', 'drop');
+      void p.offsetWidth;
+      p.classList.add(anim);
+      setTimeout(() => p.classList.remove(anim), 260);
+    }
+    lastPoints = state.points;
+
+    const toNext = MILESTONE_STEP - (state.points % MILESTONE_STEP);
+    $('pointsSub').textContent = state.points === state.best && state.points > 0
+      ? 'New personal best territory 🔥'
+      : `${toNext} to the next 50`;
+
+    $('best').textContent = state.best;
+    $('streak').textContent = state.streak;
+    [...$('dots').children].forEach((d, i) => d.classList.toggle('on', i < state.streak));
+
+    const checks = state.today.checks;
+    document.querySelectorAll('#habits .habit').forEach(el => {
+      const i = Number(el.dataset.i);
+      el.classList.toggle('checked', checks[i]);
+      el.querySelector('input').checked = checks[i];
+    });
+    const done = checks.filter(Boolean).length;
+    $('todayCount').textContent = `${done}/5 done today`;
+    $('todayPerfect').textContent = done === 5 ? 'Perfect day ✓' : '';
+    $('todayPerfect').className = done === 5 ? 'perfect' : '';
+
+    renderMilestones();
+    renderHistory();
+  }
+
+  function renderMilestones() {
+    const wrap = $('milestones');
+    const unlockedCount = Math.floor(state.best / MILESTONE_STEP);
+    const focused = document.activeElement && document.activeElement.dataset.tier;
+    // Don't rebuild while typing into a field (keeps cursor/focus intact).
+    if (focused && wrap.dataset.count === String(unlockedCount)) {
+      updateLockedBar();
+      return;
+    }
+    let html = '';
+    for (let k = 1; k <= unlockedCount; k++) {
+      const tier = k * MILESTONE_STEP;
+      const val = state.rewards[tier] || '';
+      html += `
+        <div class="card ms">
+          <div class="tier num">${tier}</div>
+          <div class="body">
+            <div class="t">Unlocked reward</div>
+            <input type="text" data-tier="${tier}" maxlength="120" value="${escapeHtml(val)}" placeholder="Type your reward…" aria-label="Reward for ${tier} points">
+          </div>
+        </div>`;
+    }
+    const next = (unlockedCount + 1) * MILESTONE_STEP;
+    html += `
+      <div class="card ms locked">
+        <div class="tier num">${next}</div>
+        <div class="body">
+          <div class="t">Locked · reach ${next} points</div>
+          <div class="hint" id="lockedHint"></div>
+          <div class="bar"><span id="lockedBar"></span></div>
+        </div>
+      </div>`;
+    wrap.innerHTML = html;
+    wrap.dataset.count = String(unlockedCount);
+    updateLockedBar();
+  }
+  function updateLockedBar() {
+    const next = (Math.floor(state.best / MILESTONE_STEP) + 1) * MILESTONE_STEP;
+    const prev = next - MILESTONE_STEP;
+    const pct = Math.max(0, Math.min(100, ((state.points - prev) / MILESTONE_STEP) * 100));
+    const left = next - state.points;
+    const hint = $('lockedHint'), bar = $('lockedBar');
+    if (hint) hint.textContent = `${left} point${left === 1 ? '' : 's'} to unlock`;
+    if (bar) bar.style.width = pct + '%';
+  }
+
+  function renderHistory() {
+    const list = $('history');
+    if (!state.wipeouts.length) {
+      list.innerHTML = '<li class="empty">No wipeouts yet. Keep it that way.</li>';
+      return;
+    }
+    list.innerHTML = state.wipeouts.map(w => `
+      <li>
+        <span>${escapeHtml(prettyDate(w.date))}</span>
+        <span class="lost num">−${Number(w.pointsLost) || 0} pts${w.streakLost ? ` · ${w.streakLost}/7 streak` : ''}</span>
+      </li>`).join('');
+  }
+
+  // ---------- milestone editing ----------
+  $('milestones').addEventListener('input', e => {
+    const t = e.target.dataset.tier;
+    if (!t) return;
+    const v = e.target.value.trim();
+    if (v) state.rewards[t] = e.target.value; else delete state.rewards[t];
+    save();
+  });
+
+  // ---------- confirm dialog ----------
+  const dlg = $('confirmDialog');
+  function confirmAction(title, body, okLabel) {
+    return new Promise(resolve => {
+      $('confirmTitle').textContent = title;
+      $('confirmBody').textContent = body;
+      $('confirmOk').textContent = okLabel;
+      if (typeof dlg.showModal !== 'function') { resolve(window.confirm(`${title}\n\n${body}`)); return; }
+      const done = ok => { dlg.close(); cleanup(); resolve(ok); };
+      const onOk = () => done(true);
+      const onCancel = () => done(false);
+      const onClose = () => { cleanup(); resolve(false); };
+      const cleanup = () => {
+        $('confirmOk').removeEventListener('click', onOk);
+        $('confirmCancel').removeEventListener('click', onCancel);
+        dlg.removeEventListener('cancel', onClose);
+      };
+      $('confirmOk').addEventListener('click', onOk);
+      $('confirmCancel').addEventListener('click', onCancel);
+      dlg.addEventListener('cancel', onClose);
+      dlg.showModal();
+      $('confirmCancel').focus();
+    });
+  }
+
+  $('btnOver').addEventListener('click', async () => {
+    const ok = await confirmAction('Went over 1,800 calories?', `This subtracts 5 points (you have ${state.points}). Points can't go below 0.`, 'Subtract 5');
+    if (ok) penaltyOverCals();
+  });
+  $('btnFastFood').addEventListener('click', async () => {
+    const ok = await confirmAction('Ate fast food?', `This wipes your ${state.points} current points and ${state.streak}/7 perfect-day streak back to 0, and logs today in your Wipeout History. Your Personal Best and rewards are kept.`, 'Reset to 0');
+    if (ok) penaltyFastFood();
+  });
+
+  // ---------- celebration ----------
+  function celebrate() {
+    $('celebrate').classList.add('show');
+    $('celebrateClose').focus();
+    confetti();
+    if (navigator.vibrate) navigator.vibrate([80, 60, 120]);
+  }
+  $('celebrateClose').addEventListener('click', () => $('celebrate').classList.remove('show'));
+
+  function confetti() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('confetti'), ctx = c.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    const colors = ['#3ee08f', '#f5c451', '#ffffff', '#5fb7ff', '#ff7ab8'];
+    const parts = Array.from({ length: 160 }, () => ({
+      x: innerWidth / 2 + (Math.random() - .5) * 80, y: innerHeight * .45,
+      vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4,
+      r: Math.random() * 6 + 3, rot: Math.random() * 6, vr: (Math.random() - .5) * .3,
+      color: colors[(Math.random() * colors.length) | 0]
+    }));
+    const start = performance.now();
+    (function frame(now) {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      for (const p of parts) {
+        p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6);
+        ctx.restore();
+      }
+      if (now - start < 3500) requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, innerWidth, innerHeight);
+    })(start);
+  }
+
+  // ---------- little UI helpers ----------
+  function floatText(el, text, neg) {
+    const r = el.getBoundingClientRect();
+    const f = document.createElement('div');
+    f.className = 'float num' + (neg ? ' neg' : '');
+    f.textContent = text;
+    f.style.left = (r.right - 52) + 'px';
+    f.style.top = (r.top + r.height / 2 - 14) + 'px';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 950);
+  }
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // ---------- backup ----------
+  $('btnExport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `habit-tracker-backup-${dayKey()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  $('btnImport').addEventListener('click', () => $('importFile').click());
+  $('importFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      const ok = await confirmAction('Import backup?', 'This replaces all current data with the backup file.', 'Import');
+      if (!ok) return;
+      state = sanitize(data);
+      rollover();
+      save();
+      $('milestones').dataset.count = '';
+      render();
+      toast('Backup imported.');
+    } catch { toast('That file isn’t a valid backup.'); }
+  });
+
+  // ---------- boot ----------
+  buildHabits();
+  rollover();
+  render();
+
+  // Handle midnight while the app is open, and changes made in another tab.
+  const tick = () => { if (rollover()) render(); };
+  setInterval(tick, 30 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+  window.addEventListener('storage', e => {
+    if (e.key === STORAGE_KEY) { state = load(); $('milestones').dataset.count = ''; rollover(); render(); }
+  });
+})();
+</script>
+</body>
+</html>
