@@ -689,6 +689,7 @@
   const STREAK_BONUS = 5;
   const OVER_PENALTY = 5;
   const STEP = 50;
+  const MAX_PLANNED_TIER = 1000;   // reward slots are always shown up to here (more appear if you pass it)
   const LEVEL_TITLES = ['Rookie', 'Starter', 'Go-Getter', 'Committed', 'Disciplined', 'Locked In', 'Machine', 'Unstoppable', 'Elite', 'Legend'];
 
   const ICONS = {
@@ -1122,7 +1123,7 @@
       <div><b class="num">${Math.max(0, nextTier - state.points)}</b><span>Points to next</span></div>`;
 
     const highestFilled = Math.max(0, ...Object.keys(state.rewards).filter(k => (state.rewards[k] || '').trim()).map(Number).filter(Number.isFinite));
-    const count = Math.max(unlocked.length + 3, highestFilled / STEP, 6);
+    const count = Math.max(unlocked.length + 3, highestFilled / STEP, MAX_PLANNED_TIER / STEP);
     const sig = JSON.stringify([count, unlocked.length, state.claimed, state.points]);
     const wrap = $('path');
     const focused = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.tier;
